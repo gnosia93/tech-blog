@@ -1,4 +1,4 @@
-## AWS Graviton 도입을 위한 EKS 멀티 아키텍처 컨테이너 이미지 빌드 가이드 ##
+## AWS Graviton 으로 EKS 비용 최적화 하기 ##
 
 최근 인프라 비용 절감과 성능 향상을 위해 AWS EKS(Elastic Kubernetes Service)에서 ARM64 기반의 AWS Graviton 인스턴스를 도입하는 기업이 급격히 늘고 있습니다.
 Graviton은 기존 x86 인스턴스 대비 최대 40%의 가성비 향상을 제공하지만, 이를 EKS에 성공적으로 적용하려면 멀티 아키텍처(Multi-Architecture) 컨테이너 이미지 빌드가 필요합니다.
