@@ -1,4 +1,4 @@
-## 블로그 - 그라비톤으로 임베딩 속도 최적화 하기 ##
+## [Tech Blog] AWS Graviton으로 LLM 임베딩 서빙 속도 최적화하기: 깡클럭에 속지 마라 ##
 
 * Bi-Encoder 의 구조 및 Cross-Encoder 와의 차이점.
 * 임베팅 백터 연산 과정
