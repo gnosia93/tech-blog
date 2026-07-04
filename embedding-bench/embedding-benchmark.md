@@ -142,6 +142,36 @@ run_benchmark("긴 문서 청크 (Batch 1)", long_texts, batch_size=1)
 run_benchmark("긴 문서 청크 (Batch 8)", long_texts, batch_size=8)
 ```
 
+[결과]
+```
+Loading BAAI/bge-m3 model on CPU...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights: 100%|████████████████████████████████████| 391/391 [00:00<00:00, 80814.71it/s]
+
+=== 짧은 문장 쿼리 (Batch 1) 벤치마크 시작 ===
+총 소요 시간: 3.7091 초
+문장 1개당 평균 지연 시간: 37.0906 ms
+처리 속도: 26.96 문장/초
+
+=== 짧은 문장 쿼리 (Batch 8) 벤치마크 시작 ===
+총 소요 시간: 1.4379 초
+문장 1개당 평균 지연 시간: 14.3789 ms
+처리 속도: 69.55 문장/초
+
+=== 긴 문서 청크 (Batch 1) 벤치마크 시작 ===
+총 소요 시간: 4.9499 초
+문장 1개당 평균 지연 시간: 98.9987 ms
+처리 속도: 10.10 문장/초
+
+=== 긴 문서 청크 (Batch 8) 벤치마크 시작 ===
+총 소요 시간: 3.4831 초
+문장 1개당 평균 지연 시간: 69.6614 ms
+처리 속도: 14.36 문장/초
+```
+
+
+
+
 ### 4. 결과 분석 및 '가성비(Price-Performance)' ###
 실험이 끝나면 단순히 속도만 보면 안 되고, **"1달러당 누가 더 많은 벡터를 구워냈는가"**를 계산해야 완벽한 기술 블로그 소스가 완성됩니다.
 각 서버의 출력창에 나온 Throughput (초당 처리량) 수치를 기반으로 아래 계산식을 대입합니다.
