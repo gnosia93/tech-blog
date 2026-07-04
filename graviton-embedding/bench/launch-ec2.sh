@@ -1,62 +1,94 @@
 #!/bin/bash
 
 # ================= 설정 변수 =================
-# AWS 서울 리전 지정
-REGION="ap-northeast-2"
-
-# AWS에 등록된 본인의 EC2 키페어 이름 입력
-KEY_NAME="my-macbook-key"
-
-# 인텔(x86) 전용 고성능 인스턴스 타입 지정
-INSTANCE_TYPE="c6i.2xlarge"
+REGION="ap-northeast-2"      # 서울 리전
+KEY_NAME="my-macbook-key"    # 본인의 EC2 키페어 이름 입력
 # =============================================
 
-echo "🔍 [1단계] 서울 리전($REGION)의 최신 Amazon Linux 2023 (x86_64) AMI ID를 조회합니다..."
+# 💡 핵심 함수: 인스턴스 타입과 아키텍처 타입을 받아 EC2를 띄우는 함수
+launch_ec2_instance() {
+    local INSTANCE_TYPE=$1
+    local ARCH=$2  # "x86_64" 또는 "arm64"
+    local TAG_NAME=$3
 
-# AWS SSM Parameter Store에서 AL2023 x86_64 아키텍처용 최신 AMI ID 추출
-AMI_ID=$(aws ssm get-parameters \
-    --names "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64" \
-    --region "$REGION" \
-    --query "Parameters[0].Value" \
-    --output text)
+    echo "🔍 [${INSTANCE_TYPE}]용 최신 Amazon Linux 2023 (${ARCH}) AMI ID 조회 중..."
+    
+    # 아키텍처에 맞는 SSM 파라미터 경로 설정
+    local AMI_ID=$(aws ssm get-parameters \
+        --names "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-${ARCH}" \
+        --region "$REGION" \
+        --query "Parameters[0].Value" \
+        --output text)
 
-if [ -z "$AMI_ID" ] || [ "$AMI_ID" == "None" ]; then
-    echo "❌ AMI ID를 조회하는데 실패했습니다. AWS CLI 로그인 상태나 권한을 확인해주세요."
+    echo "🎯 할당된 AMI ID: ${AMI_ID}"
+    echo "🚀 [${INSTANCE_TYPE}] 인스턴스 생성 시작..."
+
+    # 인스턴스 생성 및 ID 반환
+    local INSTANCE_ID=$(aws ec2 run-instances \
+        --image-id "$AMI_ID" \
+        --instance-type "$INSTANCE_TYPE" \
+        --key-name "$KEY_NAME" \
+        --region "$REGION" \
+        --associate-public-ip-address \
+        --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}}]" \
+        --query "Instances[0].InstanceId" \
+        --output text)
+
+    # 상위 스크립트에서 ID를 쓸 수 있도록 출력(Return 대용)
+    echo "$INSTANCE_ID"
+}
+
+# ================= 메인 실행 로직 =================
+
+# 사용자 입력 인수(Arguments) 체크
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "❌ 사용법 오류!"
+    echo "👉 사용법: $0 [첫번째 인스턴스 타입] [두번째 인스턴스 타입]"
+    echo "👉 예시: $0 c6i.2xlarge c7g.2xlarge"
     exit 1
 fi
 
-echo "🎯 확인된 최신 AMI ID: $AMI_ID"
-echo "🚀 [2단계] 기본 VPC에 인스턴스 생성을 시작합니다..."
+TYPE_1=$1
+TYPE_2=$2
 
-# EC2 인스턴스 생성 명령어 실행
-INSTANCE_INFO=$(aws ec2 run-instances \
-    --image-id "$AMI_ID" \
-    --instance-type "$INSTANCE_TYPE" \
-    --key-name "$KEY_NAME" \
-    --region "$REGION" \
-    --associate-public-ip-address \
-    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=Graviton-Bench-x86}]" \
-    --output json)
+echo "=================================================="
+echo "🎬 멀티 아키텍처 인프라 생성을 시작합니다."
+echo "   - 대상 1: $TYPE_1"
+echo "   - 대상 2: $TYPE_2"
+echo "=================================================="
 
-# 생성된 인스턴스의 ID 추출
-INSTANCE_ID=$(echo "$INSTANCE_INFO" | grep -o '"InstanceId": "[^"]*' | grep -o '[^"]*$')
-
-echo "⏳ 인스턴스가 생성되었습니다. (ID: $INSTANCE_ID)"
-echo "📡 퍼블릭 IP 주소가 할당될 때까지 잠시 대기합니다..."
-
-# 인스턴스가 실행(running) 상태로 완전히 바뀔 때까지 대기
-aws ec2 wait instance-running --instance-ids "$INSTANCE_ID" --region "$REGION"
-
-# 할당된 퍼블릭 IP 주소 추출
-PUBLIC_IP=$(aws ec2 describe-instances \
-    --instance-ids "$INSTANCE_ID" \
-    --region "$REGION" \
-    --query "Reservations[0].Instances[0].PublicIpAddress" \
-    --output text)
+# 1. 첫 번째 인스턴스 아키텍처 판별 (타입 이름에 'g'가 들어가면 보통 그라비톤 ARM)
+# (예: c7g, m6g 등은 arm64 / c6i, m6i 등은 x86_64)
+if [[ "$TYPE_1" == *g.* ]]; then ARCH_1="arm64"; else ARCH_1="x86_64"; fi
+ID_1=$(launch_ec2_instance "$TYPE_1" "$ARCH_1" "Bench-${TYPE_1}")
 
 echo "--------------------------------------------------"
-echo "✅ Amazon Linux 2023 인스턴스 생성 완료!"
-echo "📌 인스턴스 ID : $INSTANCE_ID"
-echo "🌐 퍼블릭 IP   : $PUBLIC_IP"
-echo "💡 접속 명령어 : ssh -i ${KEY_NAME}.pem ec2-user@${PUBLIC_IP}"
+
+# 2. 두 번째 인스턴스 아키텍처 판별 및 생성
+if [[ "$TYPE_2" == *g.* ]]; then ARCH_2="arm64"; else ARCH_2="x86_64"; fi
+ID_2=$(launch_ec2_instance "$TYPE_2" "$ARCH_2" "Bench-${TYPE_2}")
+
 echo "--------------------------------------------------"
+echo "⏳ 두 인스턴스가 모두 생성되었습니다. 부팅 및 퍼블릭 IP 할당을 대기합니다..."
+
+# 두 대가 모두 running 상태가 될 때까지 동시 대기
+aws ec2 wait instance-running --instance-ids "$ID_1" "$ID_2" --region "$REGION"
+
+# 각각의 퍼블릭 IP 추출
+IP_1=$(aws ec2 describe-instances --instance-ids "$ID_1" --region "$REGION" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+IP_2=$(aws ec2 describe-instances --instance-ids "$ID_2" --region "$REGION" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+
+# ================= 최종 결과 리포트 =================
+echo "=================================================="
+echo "🎉 [인프라 생성 완료 리포트] 🎉"
+echo "=================================================="
+echo "🖥️  1. 인스턴스 ($TYPE_1 / $ARCH_1)"
+echo "   - ID   : $ID_1"
+echo "   - IP   : $IP_1"
+echo "   - 접속 : ssh -i ${KEY_NAME}.pem ec2-user@${IP_1}"
+echo "--------------------------------------------------"
+echo "🖥️  2. 인스턴스 ($TYPE_2 / $ARCH_2)"
+echo "   - ID   : $ID_2"
+echo "   - IP   : $IP_2"
+echo "   - 접속 : ssh -i ${KEY_NAME}.pem ec2-user@${IP_2}"
+echo "=================================================="
