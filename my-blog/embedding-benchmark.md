@@ -16,8 +16,47 @@
 
 
 ### 2. SentenceTransformer 란 ? ###
+**SentenceTransformer**는 텍스트(단어, 문장, 나아가 문단 전체)를 인공지능이 이해할 수 있는 고차원의 숫자 배열인 '임베딩 벡터(Embedding Vector)'로 변환해 주는 가장 대중적이고 강력한 오픈소스 파이썬 라이브러리입니다.
+우리가 앞서 이야기했던 SBERT(Sentence-BERT)나 BAAI/bge-m3 같은 소형 임베딩 모델들을 파이썬 환경에서 단 몇 줄의 코드로 아주 쉽게 가져와 쓸 수 있도록 패키징해 둔 "임베딩 전용 툴킷"이라고 보시면 됩니다.
 
-### 2. 실전 벤치마크 스크립트 (Python) ###
+오리지널 BERT 모델은 원래 문장 생성이나 문장 간의 완벽한 유사도 비교를 위해 만들어진 구조가 아닙니다.
+만약 오리지널 BERT를 가지고 문장 A와 문장 B가 얼마나 비슷한지 비교(Cross-Encoder 방식)하려면, 두 문장을 하나로 묶어서 모델에 매번 새로 통과시켜야 했습니다. 이 방식은 서비스에 저장된 문서가 1만 개만 되어도 유저가 질문할 때마다 1만 번의 무거운 딥러닝 연산을 해야 하므로 실시간 서비스가 불가능했습니다.
+이를 해결하기 위해 등장한 개념이 **SBERT(Sentence-BERT)**이며, 이를 누구나 쉽게 쓰도록 오픈소스로 구현한 것이 바로 SentenceTransformer 라이브러리입니다.
+
+SentenceTransformer는 문장이 입력되면 내부의 트랜스포머 모델(BERT, RoBERTa 등)을 거쳐 문장 전체의 의미를 응축한 **고정된 크기의 벡터(예: 768차원 또는 1024차원의 실수 배열)**를 딱 한 번만 계산해서 뱉어냅니다.
+이렇게 문장의 의미가 숫자로 구워지면(Embedding), 컴퓨터는 복잡한 딥러닝 연산을 다시 할 필요가 없습니다. 그저 숫자들이 채워진 두 배열 사이의 각도를 재는 **'코사인 유사도(Cosine Similarity)'**라는 아주 단순한 고등학교 수준의 수학 공식만 가지고 두 문장이 얼마나 비슷한지 0.00001초 만에 계산해 낼 수 있게 됩니다.
+
+#### 주요 기능 ####
+SentenceTransformer 라이브러리는 단순히 벡터를 뽑는 것뿐만 아니라, 문장 기반 AI 서비스를 만드는 데 필요한 핵심 편의 기능을 다 가지고 있습니다.
+* model.encode(): 문장을 넣으면 임베딩 벡터 배열로 바꿔주는 핵심 메서드입니다.
+* 유사도 계산 (util.cos_sim): 두 문장 벡터 간의 코사인 유사도를 바로 계산해 주는 내장 함수를 제공합니다.
+* 시맨틱 검색 (util.semantic_search): 수많은 문서 벡터 중 유저의 질문 벡터와 가장 유사한 문서 Top-K개를 광속으로 찾아내는 검색 알고리즘이 내장되어 있습니다.
+
+#### [파이썬 코드 예시] ####
+```python
+from sentence_transformers import SentenceTransformer, util
+
+# 1. HuggingFace에 등록된 원하는 임베딩 모델 이름만 적으면 자동으로 다운로드 & 로드
+model = SentenceTransformer('BAAI/bge-m3')
+
+# 2. 문장들을 임베딩 벡터(숫자 배열)로 변환 (Encode)
+sentences = [
+    "AWS 그라비톤 CPU는 메모리 대역폭이 넓다.",
+    "인텔 제온 프로세서는 싱글 코어 클럭이 높다.",
+    "오늘 점심에는 따뜻한 국밥을 먹어야겠다."
+]
+embeddings = model.encode(sentences)
+
+# 3. 문장 간의 유사도 비교 (코사인 유사도)
+# 1번 문장(그라비톤)과 2번 문장(인텔)은 하드웨어 이야기라 유사도가 높게 나오고, 
+# 3번 문장(국밥)은 완전히 다른 이야기라 유사도가 낮게 나옵니다.
+similarity = util.cos_sim(embeddings[0], embeddings[1])
+print(f"하드웨어 문장 간 유사도: {similarity.item():.4f}")**
+```
+
+
+
+### 3. 실전 벤치마크 스크립트 (Python) ###
 두 서버에 각각 아래 코드를 올린 뒤 실행하여 **"초당 몇 개의 문장을 처리하는지(Throughput)"**와 **"문장 1개당 몇 ms가 걸리는지(Latency)"**를 측정합니다.
 ```
 import time
@@ -70,7 +109,7 @@ run_benchmark("긴 문서 청크 (Batch 1)", long_texts, batch_size=1)
 run_benchmark("긴 문서 청크 (Batch 8)", long_texts, batch_size=8)
 ```
 
-### 3. 결과 분석 및 '가성비(Price-Performance)' ###
+### 4. 결과 분석 및 '가성비(Price-Performance)' ###
 실험이 끝나면 단순히 속도만 보면 안 되고, **"1달러당 누가 더 많은 벡터를 구워냈는가"**를 계산해야 완벽한 기술 블로그 소스가 완성됩니다.
 각 서버의 출력창에 나온 Throughput (초당 처리량) 수치를 기반으로 아래 계산식을 대입합니다.
 ‭$$\text{달러당 처리량} = \frac{\text{초당 처리 문장 수 (Throughput)} \times 3600}{\text{인스턴스 시간당 비용 (On-Demand Cost)}}$$‬‭‬
