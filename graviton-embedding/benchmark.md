@@ -97,7 +97,7 @@ SentenceTransformer(
 * 32 비트 연산
 
 
-
+* export DNNL_VERBOSE=1
 * 16 비트 연산 - export DNNL_DEFAULT_FPMATH_MODE=BF16
 
 
