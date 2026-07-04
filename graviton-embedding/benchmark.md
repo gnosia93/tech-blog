@@ -94,6 +94,24 @@ SentenceTransformer(
 
 * https://github.com/gnosia93/blog/blob/main/graviton-embedding/bench/embedding-bench.py
 
+* 32 비트 연산
+
+
+
+* 16 비트 연산 - export DNNL_DEFAULT_FPMATH_MODE=BF16
+
+
+
+
+
+
+
+
+
+
+
+
+
 [결과]
 ```
 Loading BAAI/bge-m3 model on CPU...
