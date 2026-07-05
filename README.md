@@ -63,6 +63,24 @@ aws ec2 describe-instance-type-offerings \
   --location-type region \
   --filters "Name=instance-type,Values=c9g.2xlarge"
 ```
+
+* VPC 시큐리티 그룹 생성
+```
+VPC_ID=$(aws ec2 describe-vpcs \
+  --filters "Name=is-default,Values=true" \
+  --query "Vpcs[0].VpcId" --output text \
+  --region ap-northeast-2)
+echo "VPC_ID: $VPC_ID"
+
+SG_ID=$(aws ec2 create-security-group \
+  --group-name ssm-only-sg \
+  --description "SSM access only, no inbound" \
+  --vpc-id ${VPC_ID} \
+  --query "GroupId" --output text)
+
+echo "SG_ID: SG_ID"
+```
+
 * 생성하기
 ```
 AMI_ID=$(aws ssm get-parameter \
