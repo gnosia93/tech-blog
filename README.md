@@ -64,23 +64,6 @@ aws ec2 describe-instance-type-offerings \
   --filters "Name=instance-type,Values=c9g.2xlarge"
 ```
 
-* VPC 시큐리티 그룹 생성
-```
-VPC_ID=$(aws ec2 describe-vpcs \
-  --filters "Name=is-default,Values=true" \
-  --query "Vpcs[0].VpcId" --output text \
-  --region ap-northeast-2)
-echo "VPC_ID: $VPC_ID"
-
-SG_ID=$(aws ec2 create-security-group \
-  --group-name ssm-only-sg \
-  --description "SSM access only, no inbound" \
-  --vpc-id ${VPC_ID} \
-  --query "GroupId" --output text)
-
-echo "SG_ID: SG_ID"
-```
-
 * 생성하기
 ```
 AMI_ID=$(aws ssm get-parameter \
@@ -89,10 +72,8 @@ AMI_ID=$(aws ssm get-parameter \
 echo "AMI ID: ${AMI_ID}"
 
 aws ec2 run-instances \
-  --image-id "$AMI_ID" \
+  --image-id "${AMI_ID}" \
   --instance-type c9g.2xlarge \
   --iam-instance-profile Name=EC2-SSM-Profile \
-  --subnet-id subnet-xxxxxxxx \
-  --security-group-ids sg-xxxxxxxx \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=graviton-c9g}]'
 ```
