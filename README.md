@@ -84,6 +84,10 @@ aws ssm describe-instance-information \
   --query "InstanceInformationList[].{ID:InstanceId,Ping:PingStatus,Name:ComputerName}" \
   --output table
 
+aws ec2 describe-instances \
+  --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name,PublicIP:PublicIpAddress,PublicDNS:PublicDnsName,PrivateIP:PrivateIpAddress}" \
+  --output table
+
 aws ssm start-session \
   --target i-0123456789abcdef0
 ```
