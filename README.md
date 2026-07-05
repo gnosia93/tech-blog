@@ -6,6 +6,8 @@
 ### 1. aws CLI 설치 ##
 ```
 brew install awscli
+brew upgrade awscli
+
 aws --version
 ```
 
