@@ -36,3 +36,6 @@ cat /proc/cpuinfo | grep -m 1 -E "sme|sme2"
 *	sme / sme2 : 질문하신 2차원 행렬(Matrix) 연산 엔진
 *	sve / sve2 : 1차원 가변 벡터(Vector) 연산 엔진
 *	bf16 : 앞서 대화 나눈 AI 전용 16비트 부동소수점 데이터 포맷 지원 플래그
+
+## INTEL ##
+인텔의 AMX(Advanced Matrix Extensions) 행렬 연산 엔진은 서버용 CPU 기준으로 **'4세대 인텔 제온 스케일러블 프로세서' (코드명: 사파이어 래피즈, Sapphire Rapids)**부터 최초로 탑재 및 지원되기 시작했다. (INT8, BF16)
