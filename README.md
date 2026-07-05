@@ -77,3 +77,13 @@ aws ec2 run-instances \
   --iam-instance-profile Name=EC2-SSM-Profile \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=graviton-c9g}]'
 ```
+
+#### 6. 접속하기 ####
+```
+aws ssm describe-instance-information \
+  --query "InstanceInformationList[].{ID:InstanceId,Ping:PingStatus,Name:ComputerName}" \
+  --output table
+
+aws ssm start-session \
+  --target i-0123456789abcdef0
+```
