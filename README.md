@@ -4,7 +4,7 @@
 
 
 #### 1. aws CLI 설치 ####
-```
+```bash
 brew install awscli
 brew upgrade awscli
 
@@ -12,14 +12,41 @@ aws --version
 ```
 
 #### 2. EC2 세션 매니저 설치 ####
-```
+```bash
 brew install --cask session-manager-plugin
 
 session-manager-plugin
 ```
 
-#### 3. 리전 조회 및 변경 ####
-```
+#### 3. 리전 조회 및 설정 ####
+```bash
 aws configure get region
 aws configure set region us-east-1
+```
+
+#### 4. EC2 인스턴스 프로파일 생성 ####
+```bash
+# 신뢰 정책 파일 (ec2가 이 역할을 맡을 수 있게)
+cat > trust-policy.json <<'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Service": "ec2.amazonaws.com" },
+    "Action": "sts:AssumeRole"
+  }]
+}
+EOF
+
+# 역할 생성 + 정책 연결
+aws iam create-role --role-name EC2-SSM-Role \
+  --assume-role-policy-document file://trust-policy.json
+
+aws iam attach-role-policy --role-name EC2-SSM-Role \
+  --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+# 인스턴스 프로파일 생성 후 역할 담기
+aws iam create-instance-profile --instance-profile-name EC2-SSM-Profile
+aws iam add-role-to-instance-profile \
+  --instance-profile-name EC2-SSM-Profile --role-name EC2-SSM-Role
 ```
