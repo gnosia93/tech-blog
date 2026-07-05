@@ -25,6 +25,7 @@ aws configure set region us-east-1
 ```
 
 #### 4. EC2 인스턴스 프로파일 생성 ####
+ssh key 없이 AWS 시스템 매니저를 통해서 EC2 인스턴스에 접속하기 위해서 생성한다.
 ```bash
 # 신뢰 정책 파일 (ec2가 이 역할을 맡을 수 있게)
 cat > trust-policy.json <<'EOF'
@@ -49,4 +50,8 @@ aws iam attach-role-policy --role-name EC2-SSM-Role \
 aws iam create-instance-profile --instance-profile-name EC2-SSM-Profile
 aws iam add-role-to-instance-profile \
   --instance-profile-name EC2-SSM-Profile --role-name EC2-SSM-Role
+```
+생성된 프로파일을 조회한다.
+```
+aws iam get-instance-profile --instance-profile-name EC2-SSM-Profile
 ```
