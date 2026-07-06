@@ -53,6 +53,20 @@ Loading BAAI/bge-m3 model on CPU...
 처리 속도: 4.33 문장/초
 ```
 
+### 인스트럭션 확인 ###
+* Graviton (c7g/c8g) — Arm bf16 지원 확인
+```
+grep -m1 Features /proc/cpuinfo | tr ' ' '\n' | grep -E 'bf16|i8mm|sve'
+```
+* bf16 있으면 → BFMMLA(Arm bf16 행렬) 가능
+* i8mm → int8 MMLA, sve → Scalable Vector Extension
+
+
+* Intel (c7i/c8i) — AMX bf16 지원 확인
+```
+grep -o -m1 -E 'amx_tile|amx_bf16|amx_int8|avx512_bf16' /proc/cpuinfo
+```
+
 
 
 
