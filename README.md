@@ -93,6 +93,11 @@ aws ec2 run-instances \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=x86-c8i}]'
 ```
 
+* 인스턴스 삭제하기
+```
+aws ec2 terminate-instances --instance-ids i-xxxxxxxxxxxxxxxxx
+```
+
 #### 6. 접속하기 ####
 ```
 aws ssm describe-instance-information \
