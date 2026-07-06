@@ -75,6 +75,7 @@ aws ec2 run-instances \
   --image-id "${AMI_ID}" \
   --instance-type c9g.2xlarge \
   --iam-instance-profile Name=EC2-SSM-Profile \
+  --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"VolumeType":"gp3","DeleteOnTermination":true}}]' \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=graviton-c9g}]'
 ```
 * 인텔 인스턴스 생성
@@ -88,6 +89,7 @@ aws ec2 run-instances \
   --image-id "${AMI_ID}" \
   --instance-type c8i.2xlarge \
   --iam-instance-profile Name=EC2-SSM-Profile \
+  --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"VolumeType":"gp3","DeleteOnTermination":true}}]' \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=x86-c8i}]'
 ```
 
