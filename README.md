@@ -64,7 +64,7 @@ aws ec2 describe-instance-type-offerings \
   --filters "Name=instance-type,Values=c9g.2xlarge"
 ```
 
-* 생성하기
+* 그라비톤 인스턴스 생성
 ```
 AMI_ID=$(aws ssm get-parameter \
   --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64 \
@@ -76,6 +76,19 @@ aws ec2 run-instances \
   --instance-type c9g.2xlarge \
   --iam-instance-profile Name=EC2-SSM-Profile \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=graviton-c9g}]'
+```
+* 인텔 인스턴스 생성
+```
+AMI_ID=$(aws ssm get-parameter \
+  --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-amd64 \
+  --query "Parameter.Value" --output text)
+echo "AMI ID: ${AMI_ID}"
+
+aws ec2 run-instances \
+  --image-id "${AMI_ID}" \
+  --instance-type c8i.2xlarge \
+  --iam-instance-profile Name=EC2-SSM-Profile \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=x86-c8i}]'
 ```
 
 #### 6. 접속하기 ####
