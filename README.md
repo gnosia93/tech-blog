@@ -80,7 +80,7 @@ aws ec2 run-instances \
 * 인텔 인스턴스 생성
 ```
 AMI_ID=$(aws ssm get-parameter \
-  --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-amd64 \
+  --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
   --query "Parameter.Value" --output text)
 echo "AMI ID: ${AMI_ID}"
 
