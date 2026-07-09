@@ -1,4 +1,4 @@
-"Kiro power for AWS Transform" + "AWS Transform agent skill" + "AWS Transform IDE plugin" — 세 가지를 각각 구분해서요 (DevOps 블로그).
+* https://aws.amazon.com/ko/blogs/devops/building-and-running-custom-code-transformations-without-leaving-your-editor/
 
 #### Kiro Skill (Agent Skill) — 앞에서 본 SKILL.md ####
 * SKILL.md 폴더 형태의 오픈 표준 전문 지식/절차
