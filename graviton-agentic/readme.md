@@ -37,3 +37,6 @@ Kiro Power, AWS Transform 에이전트 스킬, AWS Transform IDE 플러그인(VS
 핵심 요약: Graviton의 가격·성능 이점(최대 40% 절감)을 얻기 위한 x86→ARM64 마이그레이션을, ATX의 자동화 + 여러 AI 도구에서 재사용 가능한 오픈 스킬 + Kiro/IDE 통합 실행으로 결합해 "몇 달 → 며칠"로 단축한다는 것이 이 주제의 골자입니다.
 
 참고: 라이선스 준수를 위해 출처 내용은 재구성했습니다(Content was rephrased for compliance). 더 깊은 실습 예제(특정 Java 프로젝트 전환 데모 등)가 필요하면 원하는 방향을 알려주시면 해당 블로그 내용을 더 자세히 찾아드리겠습니다.
+
+## 레퍼런스 ##
+* https://github.com/aws/aws-graviton-getting-started/tree/main/tools/skills/languages/java-x86-to-graviton 
