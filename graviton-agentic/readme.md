@@ -29,10 +29,11 @@ Kiro Power, AWS Transform 에이전트 스킬, AWS Transform IDE 플러그인(VS
 세 가지를 함께 쓰는 흐름
 정리하면 세 요소는 목적이 다르지만 상호 보완적입니다.
 
-구성 요소	역할	특징
-AWS Transform custom	대규모 자동 변환 엔진	관리형 4단계 Graviton 변환, CLI/웹
-Graviton 유니버설 스킬 (Claude Skills)	이식 가능한 마이그레이션 전문성	오픈 표준, 20+ 플랫폼 호환
-Kiro Power	에디터 내 통합 실행	Kiro/IDE에서 설계·실행
+### 구성 요소	역할	특징 ###
+* AWS Transform custom	대규모 자동 변환 엔진	관리형 4단계 Graviton 변환, CLI/웹
+* Graviton 유니버설 스킬 (Claude Skills)	이식 가능한 마이그레이션 전문성	오픈 표준, 20+ 플랫폼 호환
+* Kiro Power	에디터 내 통합 실행	Kiro/IDE에서 설계·실행
+
 핵심 요약: Graviton의 가격·성능 이점(최대 40% 절감)을 얻기 위한 x86→ARM64 마이그레이션을, ATX의 자동화 + 여러 AI 도구에서 재사용 가능한 오픈 스킬 + Kiro/IDE 통합 실행으로 결합해 "몇 달 → 며칠"로 단축한다는 것이 이 주제의 골자입니다.
 
 참고: 라이선스 준수를 위해 출처 내용은 재구성했습니다(Content was rephrased for compliance). 더 깊은 실습 예제(특정 Java 프로젝트 전환 데모 등)가 필요하면 원하는 방향을 알려주시면 해당 블로그 내용을 더 자세히 찾아드리겠습니다.
