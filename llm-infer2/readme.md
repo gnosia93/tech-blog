@@ -37,11 +37,25 @@ aws ec2 describe-instance-type-offerings \
   --query "InstanceTypeOfferings[].InstanceType" \
   --output table
 ``` 
-결과가 나오면 그 리전에서 **제공(생성 가능)**되는 g6e 타입 목록입니다. 비어 있으면 그 리전엔 없어요.
+[결과]
+```
+-------------------------------
+|DescribeInstanceTypeOfferings|
++-----------------------------+
+|  g6e.16xlarge               |
+|  g6e.24xlarge               |
+|  g6e.2xlarge                |
+|  g6e.48xlarge               |
+|  g6e.12xlarge               |
+|  g6e.8xlarge                |
+|  g6e.4xlarge                |
+|  g6e.xlarge                 |
++-----------------------------+
+```
 
 #### 2. 특정 AZ(가용영역)까지 확인
 
-  용량은 AZ 단위로 갈리므로, 어느 AZ에 있는지 보려면:
+용량은 AZ 단위로 갈리므로, 어느 AZ에 있는지 보기 위해서 아래 명령어를 실행한다.
 ```  
 aws ec2 describe-instance-type-offerings \
   --location-type availability-zone \
@@ -49,6 +63,15 @@ aws ec2 describe-instance-type-offerings \
   --region ap-northeast-2 \
   --query "InstanceTypeOfferings[].Location" \
   --output table
+```
+[결과]
+```
+-------------------------------
+|DescribeInstanceTypeOfferings|
++-----------------------------+
+|  ap-northeast-2a            |
+|  ap-northeast-2b            |
++-----------------------------+
 ```
 
 #### 3. 스펙 확인 (VRAM·vCPU 등)
@@ -59,6 +82,27 @@ aws ec2 describe-instance-types \
 SizeInMiB,GPU:GpuInfo.Gpus}" \
   --output json
 ```
+[결과]
+```
+[
+    {
+        "Type": "g6e.xlarge",
+        "vCPU": 4,
+        "RAM": 32768,
+        "GPU": [
+            {
+                "Name": "L40S",
+                "Manufacturer": "NVIDIA",
+                "Count": 1,
+                "MemoryInfo": {
+                    "SizeInMiB": 45776
+                }
+            }
+        ]
+    }
+]
+```
+
 
 #### 4. ⚠️ 쿼터(한도) 확인 — 이게 진짜 관건
 
