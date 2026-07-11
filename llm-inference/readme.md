@@ -185,3 +185,15 @@ An error occurred (DryRunOperation) when calling the RunInstances operation: Req
 but DryRun flag is set.
 ```
 
+ec2 를 생성한다.
+```
+aws ec2 run-instances \
+  --image-id "$AMI_ID" \
+  --instance-type g6e.xlarge \
+  --iam-instance-profile Name=EC2-SSM-Profile \
+  --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"VolumeType":"gp3","DeleteOnTermination":true}}]' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=g6e.xlarge}]'
+```
+
+
+
