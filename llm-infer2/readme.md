@@ -160,12 +160,13 @@ aws ec2 describe-subnets \
 AMI 를 조회한다.
 ```
 AMI=$(aws ec2 describe-images \
-    --owners amazon \
-    --filters "Name=name,Values=Deep Learning*Ubuntu 22.04*" \
-              "Name=state,Values=available" \
-    --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" \
-    --output text \
-    --region ap-northeast-2)
+      --owners amazon \
+      --filters "Name=name,Values=Deep Learning*Ubuntu 22.04*" \
+                "Name=architecture,Values=x86_64" \
+                "Name=state,Values=available" \
+      --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" \
+      --output text \
+      --region ap-northeast-2)
 echo "AMI: $AMI"
 ```
 
