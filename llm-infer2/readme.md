@@ -174,7 +174,7 @@ ec2 를 생성할 수 있는지 dry-run 을 실행한다.
 aws ec2 run-instances \
     --instance-type g6e.xlarge \
     --image-id $AMI \
-    --subnet-id @subnet-조회된값@ \
+    --subnet-id subnet-048356825459e01fc \
     --dry-run \
     --region ap-northeast-2
 ```
