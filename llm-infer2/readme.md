@@ -179,7 +179,9 @@ aws ec2 run-instances \
     --dry-run \
     --region ap-northeast-2
 ```
-→ DryRunOperation이 뜨면 "실제로 실행하면 됐을 것"이라는 뜻(성공),
-  UnauthorizedOperation이면 권한 문제입니다.
-
+[결과]
+```
+An error occurred (DryRunOperation) when calling the RunInstances operation: Request would have succeeded,
+but DryRun flag is set.
+```
 
