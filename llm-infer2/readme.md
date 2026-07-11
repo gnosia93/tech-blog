@@ -135,10 +135,19 @@ aws service-quotas get-service-quota \
 #### 5. (선택) 실제 띄우기 전 안전 점검 — Dry Run
 
   진짜 생성 명령에 --dry-run을 붙이면 과금 없이 권한·가능 여부만 검사해요:
-```  
+```
+AMI=$(aws ec2 describe-images \
+    --owners amazon \
+    --filters "Name=name,Values=Deep Learning*Ubuntu 22.04*" \
+              "Name=state,Values=available" \
+    --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" \
+    --output text \
+    --region ap-northeast-2)
+echo "AMI: $AMI"
+
 aws ec2 run-instances \
     --instance-type g6e.xlarge \
-    --image-id ami-xxxxxxxx \
+    --image-id $AMI \
     --dry-run \
     --region ap-northeast-2
 ```  
