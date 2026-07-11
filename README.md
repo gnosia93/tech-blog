@@ -2,6 +2,16 @@
 
 * https://www.anyscale.com/blog/architecting-multimodal-data-pipelines-that-scale-with-ray
 
+## python ##
+```bash
+brew install pipx
+pipx ensurepath
+```
+pipx ensurepath는 pipx로 설치한 도구들이 터미널에서 바로 실행되도록 PATH에 등록해줍니다.
+
+
+## EC2 ##
+
 
 #### 1. aws CLI 설치 ####
 ```bash
