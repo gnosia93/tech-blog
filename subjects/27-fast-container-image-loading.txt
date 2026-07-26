@@ -1,0 +1,258 @@
+네, 정확히 그 얘기입니다. 이미지에 CUDA 13.3(cu133)이 들어있어도, 그 파드가 스케줄되는 EKS 노드의 GPU 드라이버가 CUDA 13.3을 지원하지 않으면 문제가 생길 수 있습니다.
+
+왜 그런가
+CUDA는 두 부분으로 나뉩니다.
+
+구성	어디에	버전
+CUDA 런타임/툴킷	컨테이너 이미지 안 (cu133)	13.3
+NVIDIA 드라이버	EKS 노드(호스트)	노드마다 다름
+컨테이너는 자체 CUDA 런타임을 갖고 오지만, 드라이버는 노드 것을 씁니다. 그리고 규칙은 이겁니다:
+
+노드 드라이버가 지원하는 최대 CUDA ≥ 컨테이너의 CUDA
+
+노드 드라이버가 CUDA 13.0까지만 지원하는데 컨테이너가 13.3이면, 이 조건을 어기게 됩니다.
+
+여러분 노드는 앞서 CUDA 13.0으로 확인됐습니다
+이전 NCCL 로그에 이게 있었죠.
+
+
+NCCL INFO cudaDriverVersion 13000   ← CUDA 13.0
+즉 지금 노드 드라이버는 13.0까지 지원합니다. cu133(13.3)은 그보다 마이너가 높아서:
+
+같은 메이저(13.x)라 마이너 호환성으로 될 가능성은 높지만
+경계 케이스라 노드/드라이버 조합에 따라 안 될 수도 있습니다
+특히 EKS에서 노드그룹이 여러 개거나 Karpenter가 다양한 인스턴스를 띄우면, 어떤 노드는 드라이버가 낮아서 실패하는 상황이 생길 수 있어요. 이게 "노드가 cu133을 지원하지 않는 경우"입니다.
+
+증상
+드라이버가 컨테이너 CUDA를 못 받쳐주면 보통 이렇게 납니다.
+
+
+CUDA driver version is insufficient for CUDA runtime version
+그러면 torch.cuda.is_available()이 False가 되거나, 초기화에서 죽습니다. (앞서 겪은 CPU 폴백/crash와 비슷한 양상)
+
+확인 방법
+노드 드라이버가 지원하는 최대 CUDA:
+
+bash
+
+kubectl exec -it <파드> -n mnist -c node -- nvidia-smi
+# 우상단 "CUDA Version: X.Y" ← 드라이버가 지원하는 최대치
+또는 노드에 직접:
+
+bash
+
+kubectl get nodes -o custom-columns=\
+'NODE:.metadata.name,GPU:.status.allocatable.nvidia\.com/gpu'
+# GPU 노드 확인 후 nvidia-smi
+해결 방향
+컨테이너 CUDA를 노드 드라이버에 맞추기 (가장 안전) 노드가 CUDA 13.0까지면 → cu130 이하(예: cu129) 이미지 선택. 지금 하시던 cu129가 안전.
+
+노드 드라이버 업데이트 EKS GPU AMI를 최신으로 올리거나, NVIDIA device plugin/드라이버를 최신 버전으로. 그러면 cu133도 지원.
+
+노드 셀렉터로 드라이버 충분한 노드에만 배치 특정 인스턴스/노드그룹만 최신 드라이버라면, 앞서 이야기한 nodeSelector로 그 노드에만 스케줄.
+
+정리
+맞습니다 — 이미지 CUDA(cu133)를 노드 드라이버가 못 받치면 실패할 수 있습니다
+규칙: 노드 드라이버 CUDA ≥ 컨테이너 CUDA
+여러분 노드는 13.0까지 확인됨 → cu133은 경계, cu129가 안전
+확인: nvidia-smi의 "CUDA Version"
+해결: 이미지 CUDA 낮추기 / 드라이버 올리기 / nodeSelector로 배치 제어
+그래서 EFA 실습이면 최신 cu133을 굳이 고집하기보다, 노드 드라이버가 확실히 지원하는 cu129 계열 DLC로 가시는 게 안전합니다. nvidia-smi의 CUDA Version 값을 알려주시면 어떤 태그까지 안전한지 정확히 짚어드릴게요.
+
+Est. Credits Used: 3.42
+Elapsed time: 27s
+
+
+Checkpoint
+Restore
+public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.0 이게 있는지 없는지 어떻게 조회할 수 있어?
+
+Kiro
+
+Thought complete
+I'm thinking through ways to verify if a specific tag exists in the public ECR DLC repository. I can use crane to check the manifest directly, which will succeed if the tag exists or error out if it doesn't, or I could try docker manifest inspect as an alternative approach.
+특정 태그가 존재하는지는 이미지를 pull하지 않고 매니페스트만 조회하면 바로 확인됩니다. 몇 가지 방법이 있어요.
+
+방법 1: docker manifest inspect (설치된 docker로 바로)
+bash
+
+docker manifest inspect \
+  public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.0
+존재하면 → 매니페스트 JSON이 출력됨
+없으면 → no such manifest / manifest unknown 에러
+성공/실패만 빠르게 보려면:
+
+bash
+
+docker manifest inspect public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.0 >/dev/null 2>&1 \
+  && echo "존재함" || echo "없음"
+방법 2: crane manifest 또는 crane digest
+bash
+
+crane digest public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.0
+# 존재하면 sha256 다이제스트 출력, 없으면 에러
+전체 태그에서 grep으로 찾기:
+
+bash
+
+crane ls public.ecr.aws/deep-learning-containers/pytorch-training \
+  | grep "2.8.0-gpu-py312-cu129"
+방법 3: skopeo inspect
+bash
+
+skopeo inspect \
+  docker://public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.0
+존재하면 메타데이터(생성일, 아키텍처, 레이어 등)까지 보여줍니다.
+
+방법 4: Gallery 웹에서 눈으로
+
+https://gallery.ecr.aws/deep-learning-containers/pytorch-training
+Image tags 탭에서 2.8.0-gpu-py312-cu129 검색.
+
+추천
+가장 간단한 건 docker manifest inspect 입니다. docker가 이미 있으니 별도 설치 없이 되고, pull 없이 존재 여부만 확인해요. 애매하면 방법 2의 crane ls | grep으로 비슷한 태그가 실제로 어떤 형태로 있는지 보는 것도 좋습니다 (버전 표기가 미세하게 다를 수 있어서요, 예: -v1.0 유무).
+
+한 가지 참고로, DLC 태그는 끝에 -v1.0 같은 리비전이 붙기도 하고 안 붙기도 합니다. docker manifest inspect에서 "없음"이 나오면, crane ls | grep 2.8.0-gpu-py312-cu129로 정확한 전체 태그 문자열을 먼저 확인해보세요.
+
+Est. Credits Used: 2.09
+Elapsed time: 22s
+
+
+Checkpoint
+Restore
+파이토치 최신버전이 얼마?
+
+Kiro
+
+Thought complete
+The user is asking about the latest PyTorch version, and since we're in July 2026, I should search for current information rather than rely on my training data.
+PyTorch 최신 버전은 현재 정보를 확인해야 정확하니 검색해볼게요.
+
+
+1 tool call
+web_search
+
+Thought complete
+Looking at the search results, PyTorch 2.13.0 appears to have been released on July 8, 2026, based on the pytorch.kr compatibility table, with earlier versions 2.11 and 2.12 having come out in March and May respectively.
+PyTorch 최신 안정 버전은 2.13.0 입니다 (2026년 7월 8일 릴리스).
+
+PyTorch 공식 버전 호환성 표 기준으로, 2.13.0이 2026/07/08에 나왔고 torchvision 0.28과 짝을 이룹니다. (내용은 라이선스 준수를 위해 재구성)
+
+최근 릴리스 흐름
+버전	시점
+2.13.0	2026-07-08 (최신 안정)
+2.12	그 이전
+2.11	2026년 초
+참고: 아주 최근 릴리스입니다
+2.13.0이 나온 지 얼마 안 됐으니(2주 남짓), 정확한 패치 버전이나 짝 라이브러리(torchvision/torchaudio) 버전은 설치 시점에 PyPI나 위 호환성 표에서 다시 확인하시는 걸 권합니다.
+
+여러분 맥락과 연결
+지금 DLC 이미지 고르시는 중이었죠. 몇 가지 짚자면:
+
+최신 ≠ 항상 최선입니다. DLC는 보통 최신 PyTorch가 나오고 조금 뒤에 대응 이미지를 냅니다. 그래서 pytorch-training DLC에 2.13 태그가 아직 없을 수도 있어요 (crane ls로 확인).
+CUDA 호환성이 더 중요합니다. 앞서 노드 드라이버가 CUDA 13.0까지였으니, PyTorch 버전보다 이미지의 cuXXX가 노드 드라이버에 맞는지를 우선 보세요.
+EFA 실습이 목적이면 검증된 조합(예: PyTorch 2.8 + cu129 DLC)이 최신 2.13보다 안전합니다. 최신 버전은 DLC/EFA 스택 대응이 아직 안 됐을 수 있거든요.
+즉 "최신 = 2.13.0"이 맞지만, DLC + EFA + 노드 드라이버 궁합을 고려하면 약간 이전의 안정 조합을 쓰는 게 실전에선 더 무난합니다.
+
+혹시 특정 PyTorch 버전으로 DLC를 고르려는 거면, crane ls public.ecr.aws/deep-learning-containers/pytorch-training | grep 2.13으로 해당 태그가 실제 있는지부터 확인해보세요. 결과 알려주시면 노드 CUDA와 맞는지 같이 봐드리겠습니다.
+
+Est. Credits Used: 3.8
+Elapsed time: 34s
+
+
+Checkpoint
+Restore
+2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.7 이게 무슨 뜻이야?
+
+Kiro
+이 DLC 태그를 조각별로 풀면 이렇습니다.
+
+2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.7
+
+조각	의미
+2.8.0	PyTorch 버전 (2.8.0)
+gpu	GPU 빌드 (CUDA 가속 지원, cpu 변형도 있음)
+py312	Python 3.12
+cu129	CUDA 12.9 (컨테이너 안에 포함된 CUDA 런타임)
+ubuntu22.04	베이스 OS (Ubuntu 22.04)
+ec2	EC2용 변형 (다른 변형: sagemaker)
+v1.7	DLC 릴리스 리비전 (같은 조합의 7번째 갱신)
+핵심 포인트
+PyTorch 2.8.0 + CUDA 12.9 + Python 3.12 + Ubuntu 22.04 조합의 GPU 학습용 이미지입니다.
+ec2이므로 EKS/EC2 환경에 적합하고, GPU training DLC라 EFA 스택(aws-ofi-nccl + libfabric)이 포함되어 있을 가능성이 높습니다 (확정은 find libnccl-net.so로 확인).
+v1.7은 이미지 자체의 패치 리비전입니다. 같은 2.8.0-gpu-py312-cu129-... 조합이라도 보안 패치나 라이브러리 업데이트가 있을 때마다 v1.0 → v1.1 → ... → v1.7로 올라갑니다. 가장 큰 v 숫자가 최신 리비전이에요.
+여러분 노드와의 궁합
+앞서 노드 드라이버가 CUDA 13.0까지 지원한다고 확인됐죠 (cudaDriverVersion 13000). 이 이미지는 cu129 (CUDA 12.9) 이므로:
+
+12.9 ≤ 13.0 → 드라이버가 충분히 지원 ✅
+앞서 걱정했던 cu133(13.3 > 13.0)과 달리, 이건 안전한 조합입니다.
+즉 EFA 실습에 무난한 선택입니다. PyTorch 2.8 + cu129면 노드 드라이버와도 맞고, DLC라 EFA 스택도 갖춰져 있어서요.
+
+확인만 하나
+v1.7이 실제 존재하는 최신 리비전인지, 그리고 EFA 스택이 들어있는지 확인하려면:
+
+bash
+
+# 태그 존재 확인
+docker manifest inspect public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.7 >/dev/null 2>&1 && echo 존재 || echo 없음
+
+# EFA 스택 확인 (pull 후)
+docker run --rm public.ecr.aws/deep-learning-containers/pytorch-training:2.8.0-gpu-py312-cu129-ubuntu22.04-ec2-v1.7 \
+  bash -c "find / -name 'libnccl-net*.so' 2>/dev/null; fi_info -p efa 2>/dev/null | head"
+libnccl-net.so가 나오고 fi_info -p efa에 efa provider가 뜨면, 이 이미지로 EFA 학습 준비가 된 겁니다.
+
+정리하면, PyTorch 2.8.0 / CUDA 12.9 / Python 3.12 / Ubuntu 22.04 GPU 학습 이미지의 7번째 리비전이고, 여러분 노드(CUDA 13.0 지원)에 안전하게 맞는 좋은 선택입니다.
+
+Est. Credits Used: 2.14
+Elapsed time: 21s
+
+
+Checkpoint
+Restore
+2.9.0-gpu-py312-cu130-ubuntu22.04-ec2-v1.0-soci
+
+Kiro
+
+Thought complete
+I'm breaking down another DLC tag variant with the `-soci` suffix, focusing on the new components like cu130 and soci while the rest follows the same pattern as before. `2.9.0-gpu-py312-cu130-ubuntu22.04-ec2-v1.0-soci` - 2.9.0 = PyTorch 2.9.0 - cu130 = CUDA 13.0 - v1.0 = revision - soci = SOCI (Seekable OCI) index — an image variant that supports lazy loading for faster container startup via the SOCI snapshotter SOCI is a technology from AWS that enables lazy loading of container images, allowing containers to start before the full image is downloaded. The `-soci` tagged images have a SOCI index attached, which is particularly useful for large images like the 7GB+ DLC to speed up pod startup. It requires the SOCI snapshotter on the node or works with certain runtimes, and EKS has soci-snapshotter support. The key takeaway here is that cu130 matches their node's CUDA 13.0 driver perfectly, and the soci variant directly addresses the image pull time issue they experienced earlier — that 1m25s pull time could be significantly reduced with lazy loading.
+이번엔 앞과 거의 같은 패턴인데 두 가지가 새롭습니다: cu130과 -soci. 조각별로 보겠습니다.
+
+2.9.0-gpu-py312-cu130-ubuntu22.04-ec2-v1.0-soci
+
+조각	의미
+2.9.0	PyTorch 2.9.0
+gpu	GPU 빌드
+py312	Python 3.12
+cu130	CUDA 13.0 ← 이전 cu129와 다름
+ubuntu22.04	Ubuntu 22.04
+ec2	EC2용 변형
+v1.0	DLC 리비전
+soci	SOCI(Seekable OCI) 인덱스 포함 변형 ← 새로움
+cu130 — 여러분 노드에 딱 맞습니다
+앞서 노드 드라이버가 CUDA 13.0까지 지원한다고 확인됐죠 (cudaDriverVersion 13000). 이 이미지는 CUDA 13.0이라:
+
+13.0 ≤ 13.0 → 정확히 일치, 안전 ✅
+cu129(12.9)도 됐지만, cu130은 노드 드라이버와 딱 맞는 조합입니다.
+-soci가 뭔가
+SOCI = Seekable OCI. 큰 컨테이너 이미지를 lazy loading(지연 로딩) 으로 띄우게 해주는 기술입니다 (AWS가 오픈소스로 개발).
+
+동작 원리:
+
+일반 이미지: 전체를 다 받아야 컨테이너 시작 → 7GB짜리면 pull에 오래 걸림
+SOCI 이미지: 이미지에 인덱스가 붙어 있어, 당장 필요한 부분만 먼저 읽고 나머지는 실행하면서 필요할 때 가져옴 → 시작이 훨씬 빠름
+앞서 여러분 이미지 pull이 1분 25초 걸렸던 걸 기억하시죠? DLC는 수 GB라 pull이 길어지는데, SOCI 변형을 쓰면 파드가 훨씬 빨리 Running 상태가 됩니다.
+
+다만 SOCI는 노드 준비가 필요합니다
+SOCI로 실제 지연 로딩 이득을 보려면 노드에 soci-snapshotter가 설정되어 있어야 합니다.
+
+EKS: Bottlerocket AMI나 SOCI snapshotter가 활성화된 노드에서 지원됩니다.
+snapshotter가 없으면? → SOCI 인덱스는 무시되고 일반 이미지처럼 전체를 pull합니다 (즉 그냥 평범하게 동작, 이득만 없음). 깨지지는 않아요.
+정리
+2.9.0 PyTorch, CUDA 13.0, Python 3.12, Ubuntu 22.04, EC2용, -soci 변형
+cu130은 여러분 노드(CUDA 13.0 지원)에 정확히 맞음 → cu129보다 딱 떨어지는 선택
+-soci = 큰 이미지 빠른 시작용. soci-snapshotter 있는 노드에서만 이득, 없으면 일반 이미지처럼 동작
+EFA 스택 포함 여부는 여전히 find libnccl-net.so로 확인 권장
+추천
+노드 드라이버가 CUDA 13.0이니 cu130 이미지가 cu129보다 궁합이 좋습니다. SOCI 지원 노드(Bottlerocket 등)를 쓰신다면 -soci 변형이 파드 시작 시간을 줄여줘서 유리하고, 아니어도 손해는 없습니다.
+
+다만 SOCI 이득을 노리신다면 노드에 snapshotter가 켜져 있는지 확인이 필요합니다. 지금 EKS 노드가 Bottlerocket인가요, 아니면 Amazon Linux 2023인가요? 알려주시면 SOCI가 실제로 동작할 환경인지 짚어드리겠습니다
