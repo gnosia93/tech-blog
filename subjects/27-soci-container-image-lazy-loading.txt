@@ -1,0 +1,167 @@
+태그 끝의 -soci는 SOCI (Seekable OCI) 인덱스가 함께 빌드된 이미지라는 표시입니다. 지금 하시는 워크샵(대형 DLC 이미지 + dynamic 노드/EKS 스케일아웃)이랑 직접 맞닿아 있는 기술이라 딱 알아두면 좋아요.
+
+SOCI가 뭐냐
+SOCI = Seekable OCI, AWS가 만든 오픈소스 기술로, 컨테이너 이미지를 lazy loading(지연 로딩) 하게 해줍니다. 한마디로 "이미지 전체를 다 받기 전에 컨테이너를 먼저 띄우는" 기술이에요.
+
+왜 필요한가 (특히 딥러닝 컨테이너)
+지금 그 이미지 보세요: pytorch-training 2.8.0 + CUDA 12.9 + py312. 이런 DLC는 보통 수 GB~10GB+ 됩니다. 기본 컨테이너 방식은 이렇게 동작합니다:
+
+
+[기존] 이미지 전체 pull 완료 → 압축 해제 → 그다음에야 컨테이너 시작
+즉 10GB짜리를 다 내려받고 풀 때까지 컨테이너가 안 뜹니다. GPU 노드에서 훈련 파드가 뜨는 데 몇 분씩 걸리는 주범이 이 이미지 pull이에요.
+
+SOCI는 이렇게 바꿉니다:
+
+
+[SOCI] 컨테이너 즉시 시작 → 실제로 필요한 파일 블록만 그때그때 가져옴(seek)
+원리 (간단히)
+컨테이너 이미지 레이어는 보통 tar.gz라, 특정 파일 하나만 꺼내려 해도 전체를 풀어야 합니다(random access가 안 됨).
+SOCI는 이미지와 별도로 **"SOCI 인덱스"**를 만들어서, 압축된 레이어 안의 특정 위치로 바로 seek해서 필요한 부분만 읽을 수 있게 합니다.
+그래서 컨테이너 구동에 당장 필요한 파일만 먼저 가져오고, 나머지는 백그라운드로/요청 시 받습니다.
+핵심은 원본 이미지를 변형하지 않고, 인덱스만 부가적으로 붙인다는 점입니다. 그래서 태그에 -soci가 별도로 붙는 거예요.
+실제 효과
+파드/컨테이너 시작 시간 대폭 단축. 큰 이미지일수록 이득이 큽니다(작은 이미지는 오히려 이득이 미미해서 SOCI를 잘 안 씀).
+연구자가 관측하는 "훈련 잡 던졌는데 파드 뜨는 데 한참 걸림" 문제가 줄어듭니다.
+어디서 동작하나 (중요)
+SOCI 인덱스가 이미지에 있다고 자동으로 되는 게 아니라, 이미지를 실행하는 쪽이 SOCI를 지원해야 lazy loading이 켜집니다.
+
+ECS / Fargate: SOCI를 네이티브 지원 (자동으로 활용)
+EKS / Kubernetes: soci-snapshotter를 노드에 설치/설정해야 함 (containerd 플러그인). 이게 없으면 그냥 일반 이미지처럼 전체 pull 함.
+soci-snapshotter가 없는 환경에서도 이미지 자체는 정상 동작합니다. 단지 lazy loading 이점만 못 받을 뿐이에요(그냥 평범한 DLC로 동작).
+님 워크샵 관점
+Part 2에서 EKS로 스케일아웃하면서 대형 PyTorch DLC를 여러 노드에 뿌리게 되잖아요. 이때:
+
+dynamic/오토스케일 노드는 뜰 때마다 이미지를 새로 받아야 해서 콜드 스타트가 큰 병목입니다(앞에서 얘기한 nccl 재설치 부팅 지연과 같은 결).
+EKS 노드에 soci-snapshotter를 설정해두면 이 큰 이미지의 파드 기동 시간을 크게 줄일 수 있어서, "스케일아웃할 때 왜 SOCI 이미지를 쓰는가"가 워크샵에서 좋은 교육 포인트가 됩니다.
+단, soci-snapshotter 설정이 안 된 노드에선 -soci 태그를 써도 효과가 없으니, "인덱스 있는 이미지 + 지원하는 런타임" 둘 다 갖춰야 한다는 걸 짚어주면 좋습니다.
+정리
+-soci = 이 DLC에 Seekable OCI 인덱스가 딸려 있다는 뜻.
+효과: 큰 이미지를 다 안 받고도 컨테이너 즉시 시작 → 콜드 스타트 단축.
+조건: 실행 환경(ECS는 기본, EKS는 soci-snapshotter 필요)이 SOCI를 지원해야 실제 이점 발생.
+없으면? 그냥 일반 이미지로 정상 동작(이점만 없음).
+혹시 EKS 노드에 soci-snapshotter를 붙이는 설정(노드 부트스트랩/데몬셋)이나, 워크샵 문서에 넣을 "SOCI로 파드 콜드스타트 줄이기" 설명 섹션이 필요하면 만들어드릴게요.
+
+Est. Credits Used: 1.16
+Elapsed time: 40s
+
+
+Checkpoint
+Restore
+soci-snapshotter 는 어떻게 설치하는 거야?
+
+Kiro
+
+Thought complete
+I'm thinking through how to install soci-snapshotter on EKS. It's a containerd snapshotter plugin, and while EKS has added some native support for SOCI recently, Bottlerocket OS is where I'm seeing the most direct integration available. The installation approach varies depending on your setup: for self-managed nodes, you'd install the binary, configure a systemd service, and update containerd's configuration file with the proxy plugin settings. Bottlerocket handles this more directly through its container runtime settings. Since this is an evolving area and my knowledge might be outdated for July 2026, I should search for the current installation methods to give you accurate guidance.
+soci-snapshotter는 설정 방식이 계속 진화하고 있어서(특히 EKS에서 네이티브 지원이 붙는 흐름), 최신 방법을 확인하고 정확히 알려드릴게요.
+
+
+2 tool calls
+web_search
+web_search
+
+Thought complete
+I should look up the official EKS installation documentation from the soci-snapshotter repository to make sure I'm giving accurate steps.
+공식 EKS 가이드를 확인해서 정확한 절차를 뽑아올게요.
+
+
+1 tool call
+Fetch URL
+https://github.com/awslabs/soci-snapshotter/blob/main/docs/eks.md
+
+Thought complete
+I'm pulling together the key installation details and noting that EKS Auto Mode has native SOCI support, while also highlighting the simpler deployment paths available through EKS-optimized AMIs. I'll organize this around how soci-snapshotter works as a containerd proxy plugin daemon that gets installed on each node in an EKS cluster.
+핵심을 먼저 말하면: **soci-snapshotter는 각 노드의 containerd에 붙는 "proxy 스냅샷터 플러그인"**입니다. 그래서 EKS에서는 클러스터가 아니라 노드 부팅 시(launch template userdata)에 설치 + containerd/kubelet 설정을 바꿔주는 방식으로 깝니다. 파드 매니페스트에 뭘 넣는 게 아니에요.
+
+설치 경로가 3가지 있고, 노드 OS에 따라 난이도가 다릅니다.
+
+경로 A: AL2023 노드에 직접 설치 (공식 가이드 방식)
+가장 표준적이고 awslabs 공식 EKS 가이드가 이 방식입니다. 큰 흐름은:
+
+1) 노드는 AL2023 기반 EKS-optimized AMI를 써야 함
+
+AL2(구버전)는 안 됩니다. AL2023의 nodeadm으로 containerd/kubelet을 설정하는 데 의존하기 때문입니다.
+
+2) 노드에서 containerd + kubelet이 SOCI를 쓰도록 설정 (nodeadm NodeConfig)
+
+yaml
+
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  kubelet:
+    config:
+      # kubelet의 이미지 서비스를 SOCI 소켓으로 지정
+      imageServiceEndpoint: unix:///run/soci-snapshotter-grpc/soci-snapshotter-grpc.sock
+  containerd:
+    config: |
+      [proxy_plugins.soci]
+        type = "snapshot"
+        address = "/run/soci-snapshotter-grpc/soci-snapshotter-grpc.sock"
+        [proxy_plugins.soci.exports]
+          root = "/var/lib/soci-snapshotter-grpc"
+      [plugins."io.containerd.grpc.v1.cri".containerd]
+        snapshotter = "soci"
+        disable_snapshot_annotations = false   # lazy load 정보 전달에 필수
+3) 부팅 시 soci-snapshotter-grpc 바이너리 설치 + systemd 서비스 기동 (userdata 스크립트)
+
+핵심 동작만 정리하면:
+
+GitHub 릴리스에서 soci-snapshotter-<version>-linux-<arch>.tar.gz 받아서 soci-snapshotter-grpc를 /usr/local/bin에 설치
+/etc/soci-snapshotter-grpc/config.toml 작성 (프라이빗 레지스트리 자격증명용 CRI keychain 설정)
+soci-snapshotter.service를 systemd에 등록하고 systemctl enable --now
+toml
+
+# /etc/soci-snapshotter-grpc/config.toml (프라이빗 ECR 자격증명 캐싱)
+[cri_keychain]
+enable_keychain = true
+image_service_path = "/run/containerd/containerd.sock"
+4) 위 NodeConfig + 설치 스크립트를 MIME multipart userdata로 합쳐서 launch template 생성
+
+5) 그 launch template으로 managed nodegroup 생성
+
+bash
+
+eksctl create nodegroup -f - <<EOF
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: "<클러스터>"
+  region: "<리전>"
+managedNodeGroups:
+  - name: "ng-soci"
+    launchTemplate:
+      id: "<LAUNCH_TEMPLATE_ID>"
+EOF
+즉 **"launch template userdata에 (a) containerd/kubelet SOCI 설정 (b) soci-snapshotter 설치 스크립트를 넣고, 그걸로 노드그룹을 만든다"**가 전부입니다.
+
+경로 B: Bottlerocket 노드 (더 간단)
+GPU 노드를 Bottlerocket(예: BOTTLEROCKET_X86_64_NVIDIA)로 쓰면 SOCI 관련 구성이 훨씬 매끄럽습니다. Bottlerocket은 컨테이너 전용 OS라 스냅샷터 세팅이 설정값(TOML) 수준으로 정리돼 있어서, AL2023처럼 바이너리 직접 설치/systemd 등록을 손으로 안 해도 됩니다. GPU 워크로드면 이쪽을 우선 검토할 만합니다.
+
+경로 C: EKS Auto Mode (관리형, 손 안 대는 방식)
+가장 최신 흐름인데, SOCI 논문에 따르면 EKS Auto Mode가 GPU 인스턴스에 SOCI의 parallel pull 모드를 기본 사용한다고 나옵니다. 즉 Auto Mode를 쓰면 노드 설정을 직접 안 해도 대형 이미지 pull이 가속됩니다. 콘텐츠는 라이선스 준수를 위해 재구성했습니다.
+
+직접 launch template 만들 필요 없이 관리형으로 이점을 받는 방향.
+다만 세밀한 제어(어떤 스냅샷터, 어떤 설정)는 줄어듭니다.
+검증 방법
+스냅샷터는 k8s UI에 안 보여서, 노드에 들어가서 SOCI 파일시스템이 마운트됐는지로 확인합니다.
+
+bash
+
+# 노드에서 (SSM으로 실행 가능)
+findmnt --source soci
+fuse.rawBridge 타입의 soci 마운트들이 보이면 정상 동작 중입니다.
+
+중요한 전제 두 가지
+이미지에 SOCI 인덱스가 있어야 함. 노드에 스냅샷터를 깔아도, 이미지에 인덱스가 없으면 lazy load가 안 되고 일반 pull로 fallback합니다. 지금 쓰시는 ...-soci 태그 DLC는 인덱스가 이미 들어있어서 이 조건을 만족합니다. 직접 만든 이미지는 soci create로 인덱스를 만들어 ECR에 push해야 합니다.
+프라이빗 ECR 자격증명. 위 cri_keychain 설정이 그 역할입니다. 프라이빗 레지스트리를 쓰면 이 부분이 빠지면 pull이 실패합니다.
+님 워크샵 기준 추천
+빠르게 실습/데모: 공식 가이드(경로 A)를 그대로 따라가면 copy-paste로 됩니다. "왜 노드 레벨에서 containerd를 건드리는가"를 보여줄 수 있어 교육적으로도 좋아요.
+GPU 노드 운영 편의: Bottlerocket(경로 B) 또는 EKS Auto Mode(경로 C)가 손이 덜 갑니다. 특히 GPU 콜드 스타트 단축이 목적이면 Auto Mode의 parallel pull이 매력적입니다.
+어느 쪽이든 지금 -soci DLC를 쓰는 건 이미 절반은 준비된 상태입니다(인덱스 있음).
+정리
+경로	노드 OS	난이도	특징
+A. 직접 설치	AL2023	중	launch template userdata로 바이너리+설정, 제어력 높음
+B. Bottlerocket	Bottlerocket	하	설정값 수준, GPU 노드에 적합
+C. EKS Auto Mode	관리형	최하	GPU에 parallel pull 자동, 제어력 낮음
+워크샵 Part 2(EKS 스케일아웃)에 "대형 DLC 콜드 스타트를 SOCI로 줄이기" 섹션을 넣으신다면, 경로 A의 launch template userdata 전체 스크립트를 만들어 드릴 수 있어요. 아니면 GPU 노드라 Bottlerocket 경로로 갈지 정하시면 거기 맞춰 구성 정리해드릴게요.
