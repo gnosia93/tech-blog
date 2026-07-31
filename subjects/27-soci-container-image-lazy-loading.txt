@@ -165,3 +165,164 @@ A. 직접 설치	AL2023	중	launch template userdata로 바이너리+설정, 제
 B. Bottlerocket	Bottlerocket	하	설정값 수준, GPU 노드에 적합
 C. EKS Auto Mode	관리형	최하	GPU에 parallel pull 자동, 제어력 낮음
 워크샵 Part 2(EKS 스케일아웃)에 "대형 DLC 콜드 스타트를 SOCI로 줄이기" 섹션을 넣으신다면, 경로 A의 launch template userdata 전체 스크립트를 만들어 드릴 수 있어요. 아니면 GPU 노드라 Bottlerocket 경로로 갈지 정하시면 거기 맞춰 구성 정리해드릴게요.
+
+
+크샵 Part 2(EKS 스케일아웃)에 "대형 DLC 콜드 스타트를 SOCI로 줄이기" 섹션을 넣으신다면, 경로 A의 launch template userdata 전체 스크립트를 만들어 드릴 수 있어요. 아니면 GPU 노드라 Bottlerocket 경로로 갈지 정하시면 거기 맞춰 구성 정리해드릴게요.
+
+Est. Credits Used: 2.63
+Elapsed time: 1m 17s
+
+
+Checkpoint
+Restore
+
+apiVersion: karpenter.k8s.aws/v1  
+kind: EC2NodeClass  
+metadata:  
+  name: gpu  
+spec:  
+  role: "eksctl-KarpenterNodeRole-${CLUSTER_NAME}"  
+  amiSelectorTerms:  
+    # Required; when coupled with a pod that requests NVIDIA GPUs or AWS Neuron  
+    # devices, Karpenter will select the correct AL2023 accelerated AMI variant  
+    # see https://aws.amazon.com/ko/blogs/containers/amazon-eks-optimized-amazon-linux-2023-accelerated-amis-now-available/  
+    # EKS GPU Optimized AMI: NVIDIA 드라이버와 CUDA 런타임만 포함된 가벼운 이미지 (Karpenter가 자동으로 선택 가능) 가 설치됨.  
+    # 특정 DLAMI 가 필요한 경우 - name : 필드에 정의해야 함.   
+    - alias: al2023@latest  
+  subnetSelectorTerms:  
+    - tags:  
+        karpenter.sh/discovery: "${CLUSTER_NAME}"   
+  securityGroupSelectorTerms:  
+    - tags:  
+        karpenter.sh/discovery: "${CLUSTER_NAME}"   
+  blockDeviceMappings:  
+    - deviceName: /dev/xvda  
+      ebs:  
+        volumeSize: 600Gi  
+        volumeType: gp3  
+EOF 카펜터 ec2nodeclass 에.. 이걸 쓰는데.. 이걸 blocknetck 으로 교체하면 되는거야?  
+Kiro
+
+Thought complete
+The user is asking whether they can simply switch their Karpenter EC2NodeClass from AL2023 accelerated AMI to Bottlerocket to enable SOCI support. I need to think through whether Bottlerocket actually supports SOCI and if that's a viable approach for their use case. I'm realizing that simply switching to Bottlerocket won't automatically enable SOCI—the snapshotter still needs to be installed and configured on the node regardless of which AMI you use. With Karpenter, this configuration happens through the `userData` field in EC2NodeClass, where you'd inject the containerd settings and installation script. I should verify Bottlerocket's current SOCI support status since that's version-specific and important to get right.
+좋은 질문인데, 한 가지 오해를 먼저 바로잡을게요. AMI를 Bottlerocket으로 바꾼다고 SOCI가 자동으로 켜지는 게 아닙니다. SOCI는 OS 종류와 상관없이 "노드에 스냅샷터를 설치하고 containerd를 그걸 쓰도록 설정"해야 동작합니다. Karpenter에서는 그걸 AMI 교체가 아니라 userData 필드로 넣습니다.
+
+Bottlerocket의 현재 SOCI 지원 상태가 버전에 민감해서 정확히 확인하고 답할게요.
+
+
+2 tool calls
+web_search
+web_search
+
+Thought complete
+I'm looking for the specific userData configuration approach from that Hashnode article on Karpenter and SOCI, particularly how to set it up for AL2023.
+Karpenter 환경에서의 구체적 방법을 확인하기 위해 실제 적용 사례를 하나 더 보겠습니다.
+
+
+1 tool call
+Fetch URL
+https://aditmodi.hashnode.dev/soci-snapshotter-on-eks-eliminating-the-8-minute-gpu-cold-start-nobody-talks-about
+
+Thought complete
+I can provide the concrete approach for their AL2023 setup—with Karpenter's EC2NodeClass, they can add `userData` directly without swapping to Bottlerocket to enable SOCI, and since they're already using `alias: al2023@latest`, I'll show how to configure it with either MIME multipart or nodeadm NodeConfig YAML.
+확인 결과를 정리하면, 답은 "Bottlerocket으로 교체한다고 되는 게 아니다" 입니다. 지금 쓰시는 AL2023 그대로 두고, EC2NodeClass에 userData를 추가하는 게 정석입니다.
+
+왜 AMI 교체가 답이 아닌가
+SOCI는 AMI에 들어있는 기능이 아니라, 노드에서 돌아가는 데몬(soci-snapshotter-grpc) + containerd 설정입니다. AL2023이든 Bottlerocket이든:
+
+스냅샷터를 설치하고
+containerd가 그 스냅샷터를 쓰도록 설정하고
+kubelet의 image service를 스냅샷터 소켓으로 지정
+이 3가지를 해줘야 켜집니다. Bottlerocket으로 바꿔도 이 설정은 어차피 해야 해서, "AMI만 교체 = SOCI 켜짐"은 성립하지 않습니다. (al2023@latest alias는 GPU 파드 요청 시 accelerated 변형을 자동 선택해주는 거라, 이건 그대로 두는 게 좋습니다.)
+
+Karpenter에서 SOCI 켜는 법: userData 추가
+Karpenter는 AL2023 노드에서 userData를 nodeadm 설정과 **병합(merge)**합니다. 그래서 클러스터 조인용 설정은 Karpenter가 알아서 넣고, 우리는 SOCI 관련 containerd/kubelet 설정 + 설치 스크립트만 추가하면 됩니다.
+
+기존 config에 spec.userData를 추가한 형태:
+
+yaml
+
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: gpu
+spec:
+  role: "eksctl-KarpenterNodeRole-${CLUSTER_NAME}"
+  amiSelectorTerms:
+    - alias: al2023@latest          # 그대로 유지 (GPU accelerated 자동 선택)
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 600Gi           # 대형 DLC라면 이 정도 확보 필요 (좋음)
+        volumeType: gp3
+  # ▼▼▼ 여기가 추가되는 부분 ▼▼▼
+  userData: |
+    MIME-Version: 1.0
+    Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+    --BOUNDARY
+    Content-Type: application/node.eks.aws
+
+    ---
+    apiVersion: node.eks.aws/v1alpha1
+    kind: NodeConfig
+    spec:
+      kubelet:
+        config:
+          imageServiceEndpoint: unix:///run/soci-snapshotter-grpc/soci-snapshotter-grpc.sock
+      containerd:
+        config: |
+          [proxy_plugins.soci]
+            type = "snapshot"
+            address = "/run/soci-snapshotter-grpc/soci-snapshotter-grpc.sock"
+            [proxy_plugins.soci.exports]
+              root = "/var/lib/soci-snapshotter-grpc"
+          [plugins."io.containerd.grpc.v1.cri".containerd]
+            snapshotter = "soci"
+            disable_snapshot_annotations = false
+
+    --BOUNDARY
+    Content-Type: text/x-shellscript; charset="us-ascii"
+
+    #!/bin/bash
+    set -euo pipefail
+    ARCH=$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
+    VERSION="0.15.0"
+    ARCHIVE=soci-snapshotter-${VERSION}-linux-${ARCH}.tar.gz
+    cd /tmp
+    curl -sSL -o $ARCHIVE https://github.com/awslabs/soci-snapshotter/releases/download/v${VERSION}/${ARCHIVE}
+    tar xzf ./$ARCHIVE -C /usr/local/bin soci-snapshotter-grpc
+    mkdir -p /etc/soci-snapshotter-grpc
+    cat > /etc/soci-snapshotter-grpc/config.toml <<'CFG'
+    [cri_keychain]
+    enable_keychain = true
+    image_service_path = "/run/containerd/containerd.sock"
+    CFG
+    curl -sSL -o /etc/systemd/system/soci-snapshotter.service \
+      https://raw.githubusercontent.com/awslabs/soci-snapshotter/v${VERSION}/soci-snapshotter.service
+    systemctl daemon-reload
+    systemctl enable --now soci-snapshotter
+
+    --BOUNDARY--
+핵심은 userData 하나 추가한 것이고, AMI/subnet/SG/blockDevice는 손대지 않았습니다.
+
+주의할 점
+버전 확인: VERSION="0.15.0"은 예시입니다. soci-snapshotter 릴리스에서 최신 안정 버전을 확인해 맞추세요.
+containerd/kubelet 순서: 위 방식은 노드가 조인하기 전 부팅 단계에서 스냅샷터를 설치·기동해야 kubelet이 그 소켓을 잡습니다. 병합 순서 때문에 간헐적으로 타이밍 이슈가 생기면, 설치 스크립트가 systemd 서비스를 먼저 올리도록 되어 있는지 확인하세요.
+이미지에 SOCI 인덱스 필요: 지금 쓰시는 ...-soci DLC는 인덱스가 있어서 OK. 인덱스 없는 이미지는 그냥 일반 pull로 fallback(동작은 함, 가속만 안 됨).
+검증: 노드에서 findmnt --source soci 하면 fuse.rawBridge 타입 soci 마운트가 보여야 합니다.
+Bottlerocket을 굳이 쓴다면
+Bottlerocket도 선택지이긴 한데, 그 경우엔 EC2NodeClass의 amiFamily를 Bottlerocket으로 바꾸고 Bottlerocket 전용 settings(TOML)로 스냅샷터를 활성화하는 다른 방식이 필요합니다. AL2023 스크립트 방식과는 설정 문법이 완전히 달라서, "그냥 이름만 Bottlerocket으로 교체"로는 안 됩니다. 지금 이미 AL2023 + userData로 가는 게 변경 폭이 제일 작습니다.
+
+정리
+오해	실제
+"AMI를 Bottlerocket으로 바꾸면 SOCI 됨"	❌ AMI 교체로는 안 켜짐
+"EC2NodeClass 통째로 교체"	❌ 기존 유지, userData만 추가
+올바른 방법	✅ AL2023 유지 + spec.userData에 SOCI 설정/설치 주입
+즉 블록 전체를 교체하는 게 아니라, 지금 config에 userData 블록 하나를 얹으면 됩니다. 워크샵에 넣으실 거면 이 userData가 하는 일(containerd proxy plugin 등록 + 데몬 설치)을 한 줄씩 주석으로 풀어드릴 수도 있어요.
