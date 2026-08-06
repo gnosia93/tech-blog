@@ -1,5 +1,6 @@
-## 가중치 기반 노드풀로 비용, 성능, ICE 동시에 잡기 — GPU Spot 실전 사례 ##
+## 카펜터 가중치 기반 노드풀로 비용, 성능, ICE 동시에 잡기 — GPU Spot 실전 사례 ##
 
+* "ICE(Insufficient Capacity Error, 용량 부족 에러)"
 
 ### Backgroud ###
 
