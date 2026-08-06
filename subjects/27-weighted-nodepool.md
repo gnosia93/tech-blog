@@ -8,8 +8,9 @@
 * 변화: 모델에 어텐션 연산 추가 → T4로는 느림 → 더 빠른 GPU 필요
 * 현재 요건: 어텐션 가속이 되는 g5/g6/g7을 Spot으로 우선 사용, 이게 확보 안 되면 배치 장애 → 물량 많은 g4dn Spot으로 fallback
 
- 기술적으로 g4dn=T4/Turing은 FlashAttention-2 미지원, g5/g6는 Ampere/Ada라 지원 
+-> 기술적으로 g4dn=T4/Turing은 FlashAttention-2 미지원, g5/g6는 Ampere/Ada라 지원 
 
+-> 리전마다 별도의 eks 클러스터를 별도로 구성하여 (서로 다른 인스턴스 타입의 노드풀을 가짐 -> 왜.. 리전마다 잔여 인스턴스 타입들이 틀려서), S3 를 버킷 하부의 디렉토리 레벨(샤드) 로 복재하여 구성할 수 있으나, 이는 추가적인 eks 비용할생과 운영 복잡성을 증가시키므로 권장되는 아키텍처는 아니다.. 또한 S3 복제비용(api, nat, CRR 등)이 추가적으로 발생.
 
 ### 들어가며 ###
 
@@ -134,3 +135,157 @@ c* onsolidation 켜두기. Spot 회수·유휴 노드를 정리해 저비용 상
 이 고객의 사례는 "빠른 자원 아니면 안 돼" vs "물량 있는 자원이라도 써야 해" 사이의 오래된 긴장을, weight 한 줄로 우선순위화해 풀어낸 이야기입니다. 어텐션 가속이 되는 g5/g6/g7을 우선 쓰되, Spot이 마르면 물량 넉넉한 g4dn이 배치를 지켜줍니다.
 
 성능은 평상시에 챙기고, 장애는 안전망으로 막고, 비용은 Spot으로 내리고. 거창한 오토스케일링 로직 없이 NodePool 두 개와 weight만으로 시작할 수 있습니다.
+
+
+----
+
+## GPU 아키텍처 detection ###
+
+* GPU 아키텍처 / 메모리 / GPU 이름 → PyTorch로 조회 가능 ✅
+* EC2 인스턴스 타입(예: g5.xlarge) → PyTorch로는 불가능 ❌ (이건 AWS 메타데이터라 IMDS로 따로 조회해야 함)
+
+### 1. PyTorch로 가능한 것 — GPU 정보 ###
+```
+import torch
+
+if torch.cuda.is_available():
+    i = torch.cuda.current_device()
+    props = torch.cuda.get_device_properties(i)
+
+    print("GPU 이름:", props.name)                    # 예: NVIDIA A10G / Tesla T4 / NVIDIA L4
+    print("Compute Capability:", f"{props.major}.{props.minor}")  # 아키텍처 지표
+    print("총 GPU 메모리(GB):", round(props.total_memory / 1024**3, 1))
+    print("SM 개수:", props.multi_processor_count)
+    print("GPU 개수:", torch.cuda.device_count())
+else:
+    print("CUDA GPU 없음")
+```
+아키텍처는 GPU 이름이 아니라 major.minor(compute capability)로 판별하는 게 정확하다.
+```
+CC	아키텍처	대표 GPU	AWS 인스턴스
+7.5	Turing	T4	g4dn
+8.0	Ampere	A100	p4
+8.6	Ampere	A10G	g5
+8.9	Ada Lovelace	L4 / L40S	g6 / g6e
+9.0	Hopper	H100 / H200	p5 / p5e·p5en
+10.x	Blackwell	B200	p6
+```
+
+### 2. PyTorch로 불가능한 것 — 인스턴스 타입 ###
+인스턴스 타입은 CUDA가 모르는 정보라, EC2 인스턴스 메타데이터 서비스(IMDS) 에서 가져와야 한다. (IMDSv2 토큰 방식):
+
+```
+import requests
+
+def get_ec2_instance_type():
+    try:
+        token = requests.put(
+            "http://169.254.169.254/latest/api/token",
+            headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"},
+            timeout=1,
+        ).text
+        return requests.get(
+            "http://169.254.169.254/latest/meta-data/instance-type",
+            headers={"X-aws-ec2-metadata-token": token},
+            timeout=1,
+        ).text
+    except Exception:
+        return None  # EC2가 아니거나 IMDS 차단된 환경
+
+print("인스턴스 타입:", get_ec2_instance_type())  # 예: g5.2xlarge
+```
+EKS/파드 환경에서는 IMDS 접근이 막혀 있을 수 있다. 그럴 땐 Karpenter/Kubernetes가 노드에 붙여주는 라벨(node.kubernetes.io/instance-type, karpenter.k8s.aws/instance-family 등)을 파드에 Downward API 환경변수로 주입해서 읽는 방식이 더 안정적이다.
+
+### 3. 앞선 블로그 시나리오와 연결 — 런타임 GPU 감지로 어텐션 경로 분기 ###
+
+fallback으로 어떤 GPU에 떨어졌는지에 따라 FlashAttention을 켤지 결정할 수 있다. FlashAttention-2는 Ampere(CC 8.0) 이상이 필요하니, g4dn(T4, CC 7.5)로 fallback되면 자동으로 일반 어텐션 경로로 내려가게 하면 된다.
+
+
+```
+import torch
+
+def attention_backend():
+    if not torch.cuda.is_available():
+        return "cpu-eager"
+    major, minor = torch.cuda.get_device_capability()
+    cc = major + minor / 10
+    if cc >= 8.0:           # Ampere 이상 → g5/g6/g7 등
+        return "flash-attention-2"
+    return "eager"          # Turing(T4)/g4dn fallback → 안전한 기본 경로
+
+print("어텐션 백엔드:", attention_backend())
+```
+이렇게 해두면 "g5/g6/g7 Spot이면 FlashAttention, g4dn으로 fallback되면 eager"가 코드 레벨에서 자동으로 처리돼서, 앞서 얘기한 ICE fallback 시에도 배치가 죽지 않는 구성과 딱 맞물린다.
+
+정리하면, GPU 이름·아키텍처(compute capability)·메모리는 PyTorch로 바로 조회 가능하고, 인스턴스 타입만 IMDS나 K8s 라벨로 별도 조회한다. 필
+
+
+## attention 가속 설정 ##
+
+### 1. HuggingFace Transformers — 가장 흔한 케이스 ###
+
+모델을 로드할 때 attn_implementation 인자에 넘겨서 바인딩한다.
+
+```
+from transformers import AutoModelForCausalLM
+import torch
+
+def hf_attn_impl():
+    if not torch.cuda.is_available():
+        return "eager"
+    major, minor = torch.cuda.get_device_capability()
+    cc = major + minor / 10
+    if cc >= 8.0:            # Ampere+ (g5/g6/g7) → FlashAttention-2
+        return "flash_attention_2"
+    return "sdpa"            # T4(g4dn) 등 → PyTorch SDPA (안전한 fallback)
+
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Llama-3.1-8B",
+    torch_dtype=torch.bfloat16,
+    attn_implementation=hf_attn_impl(),   # ← 여기서 바인딩
+).cuda()
+```
+HF가 인식하는 값은 "flash_attention_2", "sdpa", "eager" 세 가지이다.
+즉 별도의 "바인딩 함수"가 있는 게 아니라, from_pretrained(..., attn_implementation=...) 인자가 바인딩 지점이다.
+
+### 2. PyTorch 네이티브 SDPA — 컨텍스트 매니저로 바인딩 ###
+직접 F.scaled_dot_product_attention을 쓰는 코드라면, 백엔드를 컨텍스트 매니저로 강제한다.
+
+```
+import torch
+import torch.nn.functional as F
+from torch.nn.attention import sdpa_kernel, SDPBackend
+
+def sdpa_backends():
+    major, _ = torch.cuda.get_device_capability()
+    if major >= 8:   # Ampere+
+        return [SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]
+    return [SDPBackend.EFFICIENT_ATTENTION, SDPBackend.MATH]  # T4 fallback
+
+with sdpa_kernel(sdpa_backends()):          # ← 이 블록 안의 SDPA 호출에 바인딩
+    out = F.scaled_dot_product_attention(q, k, v)
+```    
+여기서는 "어느 함수에 바인딩"이 아니라, sdpa_kernel(...) 블록 안에서 실행되는 scaled_dot_product_attention 호출에 바인딩.
+
+### 3. 직접 만든 어텐션 모듈 — 분기(dispatch)로 바인딩 ###
+
+flash_attn 라이브러리를 직접 호출하는 커스텀 어텐션이라면, forward 안에서 백엔드에 따라 갈라주면 된다.
+
+```
+import torch.nn as nn
+import torch.nn.functional as F
+
+class Attention(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.backend = attention_backend()   # 초기화 때 1회 결정
+
+    def forward(self, q, k, v):
+        if self.backend == "flash-attention-2":
+            from flash_attn import flash_attn_func
+            return flash_attn_func(q, k, v)   # ← 여기서 바인딩
+        return F.scaled_dot_product_attention(q, k, v)  # eager/fallback 경로
+```
+attention_backend()는 "결정"만 하고, 실제 "바인딩"은 다음 중 하나에서 발생한다. 
+
+
