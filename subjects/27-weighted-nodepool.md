@@ -77,3 +77,54 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
 
+g5/g6/g7을 하나의 풀로 묶은 것이 포인트입니다. Karpenter의 Spot 할당은 여러 인스턴스 타입에 걸쳐 가장 여유 있는 풀을 고르므로, 세대를 묶어두면 Spot 중단(interruption) 위험이 분산되고 확보 성공률이 올라갑니다.
+
+### 2순위: g4dn (Spot, 물량 안전망) ###
+
+```
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: gpu-g4dn-fallback
+spec:
+  weight: 10                      # 안전망: 물량 많은 g4dn
+  template:
+    spec:
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["g4dn"]
+      taints:
+        - key: nvidia.com/gpu
+          effect: NoSchedule
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: gpu
+  limits:
+    nvidia.com/gpu: 200
+
+```
+
+weight: 100인 어텐션 GPU 풀이 항상 먼저 시도되고, 최신 GPU Spot 용량이 없거나 중단되면 Karpenter가 자동으로 weight: 10인 g4dn 풀로 넘어가 노드를 띄웁니다. 배치는 (느리더라도) 계속 돌아갑니다.
+
+왜 이게 비용·성능·가용성을 동시에 잡나
+성능: 평상시에는 어텐션이 가속되는 g5/g6/g7이 먼저 선택돼 배치가 빠르게 끝납니다.
+비용: 두 계층 모두 Spot이라 온디맨드 대비 큰 폭으로 절감합니다. 최신 GPU가 여유 있을 땐 그걸 저렴하게, 없을 땐 저렴한 g4dn을 씁니다.
+가용성: 최신 GPU Spot이 말라도 물량 많은 g4dn이 받아주므로 배치가 멈추지 않습니다. "빠름"을 잠깐 포기하고 "돌아감"을 지키는 거죠.
+트레이드오프였던 세 가지가 우선순위 문제로 바뀌는 게 핵심입니다.
+
+실전 팁
+fast 계층은 묶어서 다양성 확보. g5/g6/g7을 하나의 weight 100 풀에 넣으면 Spot 확보율이 올라갑니다. 굳이 "무조건 g7부터"가 필요하면 g7=100 / g6=90 / g5=80처럼 세분화할 수 있지만, 그만큼 Spot 다양성은 줄어듭니다. 성능 서열보다 확보 안정성이 중요하면 묶는 쪽을 추천합니다.
+g4dn 경로에 어텐션 fallback 코드 준비. T4에서는 FlashAttention이 안 도므로, 애플리케이션이 eager/기본 어텐션 구현으로 자동 전환되게 해두면 fallback 시에도 정상 동작합니다.
+한 방울 더: 최후의 온디맨드 안전망. Spot이 전 계층에서 마르는 상황까지 대비하려면 weight: 1짜리 온디맨드 GPU 풀을 하나 더 두는 것도 방법입니다(비용 상한은 limits로 관리).
+taint/toleration으로 GPU 노드 보호. GPU 파드만 GPU 노드에 오도록 taint를 걸고, 배치 파드에 toleration을 부여하세요.
+consolidation 켜두기. Spot 회수·유휴 노드를 정리해 저비용 상태로 계속 수렴시킵니다.
+weight는 SLA가 아니라 "선호"다. 반드시 특정 세대에서만 돌아야 하는 워크로드라면 weight가 아니라 명시적 nodeSelector로 강제하세요.
+마치며
+이 고객의 사례는 "빠른 자원 아니면 안 돼" vs "물량 있는 자원이라도 써야 해" 사이의 오래된 긴장을, weight 한 줄로 우선순위화해 풀어낸 이야기입니다. 어텐션 가속이 되는 g5/g6/g7을 우선 쓰되, Spot이 마르면 물량 넉넉한 g4dn이 배치를 지켜줍니다.
+
+성능은 평상시에 챙기고, 장애는 안전망으로 막고, 비용은 Spot으로 내리고. 거창한 오토스케일링 로직 없이 NodePool 두 개와 weight만으로 시작할 수 있습니다.
