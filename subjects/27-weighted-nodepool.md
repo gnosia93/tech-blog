@@ -51,7 +51,7 @@ GPU는 비쌉니다. 그래서 많은 팀이 배치(batch) 추론·학습 워크
 
 Karpenter NodePool의 `weight` 필드(0~100, 높을수록 우선)를 이용해 두 계층으로 나눕니다.
 
-#### 1순위: 어텐션 가속 GPU (Spot, 선호) ###
+#### 1순위: 어텐션 가속 GPU (Spot, 선호) ####
 
 ```yaml
 apiVersion: karpenter.sh/v1
@@ -80,10 +80,10 @@ spec:
     nvidia.com/gpu: 100
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
-
+```
 g5/g6/g7을 하나의 풀로 묶은 것이 포인트입니다. Karpenter의 Spot 할당은 여러 인스턴스 타입에 걸쳐 가장 여유 있는 풀을 고르므로, 세대를 묶어두면 Spot 중단(interruption) 위험이 분산되고 확보 성공률이 올라갑니다.
 
-#### 2순위: g4dn (Spot, 물량 안전망) ###
+#### 2순위: g4dn (Spot, 물량 안전망) ####
 
 ```
 apiVersion: karpenter.sh/v1
@@ -110,7 +110,6 @@ spec:
         name: gpu
   limits:
     nvidia.com/gpu: 200
-
 ```
 
 weight: 100인 어텐션 GPU 풀이 항상 먼저 시도되고, 최신 GPU Spot 용량이 없거나 중단되면 Karpenter가 자동으로 weight: 10인 g4dn 풀로 넘어가 노드를 띄웁니다. 배치는 (느리더라도) 계속 돌아갑니다.
@@ -124,6 +123,7 @@ weight: 100인 어텐션 GPU 풀이 항상 먼저 시도되고, 최신 GPU Spot 
 트레이드오프였던 세 가지가 우선순위 문제로 바뀌는 게 핵심입니다.
 
 #### 실전 팁
+
 * fast 계층은 묶어서 다양성 확보. g5/g6/g7을 하나의 weight 100 풀에 넣으면 Spot 확보율이 올라갑니다. 굳이 "무조건 g7부터"가 필요하면 g7=100 / g6=90 / g5=80처럼 세분화할 수 있지만, 그만큼 Spot 다양성은 줄어듭니다. 성능 서열보다 확보 안정성이 중요하면 묶는 쪽을 추천합니다.
 * g4dn 경로에 어텐션 fallback 코드 준비. T4에서는 FlashAttention이 안 도므로, 애플리케이션이 eager/기본 어텐션 구현으로 자동 전환되게 해두면 fallback 시에도 정상 동작합니다.
 한 방울 더: 최후의 온디맨드 안전망. Spot이 전 계층에서 마르는 상황까지 대비하려면 weight: 1짜리 온디맨드 GPU 풀을 하나 더 두는 것도 방법입니다(비용 상한은 limits로 관리).
