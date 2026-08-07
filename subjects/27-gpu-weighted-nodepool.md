@@ -384,6 +384,37 @@ CMD ["python", "serve.py"]
 ```
 site-packages 경로의 파이썬 버전(예: python3.11)은 베이스 이미지에 맞게 확인. docker run --rm pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime python -c "import sys;print(sys.path)"로 확인
 
+#### requirements.txt ####
+requirements.txt는 torch와 flash-attn을 빼는 게 핵심이다. 이 둘은 이미 베이스 이미지(그리고 빌드 스테이지)에서 제공되므로, 여기에 다시 넣으면 torch가 재설치·업그레이드되면서 flash-attn과 버전이 깨질 수 있다.
+```
+# ⚠️ torch / flash-attn 은 여기 넣지 않습니다.
+#    - torch: 베이스 이미지(pytorch/pytorch:*)가 제공
+#    - flash-attn: 빌드 스테이지에서 설치 → runtime으로 복사됨
+#    여기에 다시 넣으면 torch가 재설치되어 flash-attn ABI가 깨질 수 있음
+
+# --- 모델 로딩/추론 ---
+transformers==4.44.2
+accelerate==0.34.2
+safetensors==0.4.5
+huggingface-hub==0.25.1
+sentencepiece==0.2.0          # 일부 토크나이저(LLaMA 등)에 필요
+
+# --- 인스턴스 타입 조회(IMDS) ---
+requests==2.32.3
+
+# --- 서빙 (API로 띄운다면) ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+```
+* HTTP API 없이 배치 스크립트만 돌린다면 → fastapi/uvicorn/pydantic 줄 삭제
+* vLLM 같은 추론 엔진을 쓴다면 → vLLM이 자체적으로 torch·flash-attn·transformers 버전을 강하게 고정하므로, 이 requirements 대신 vLLM 버전만 명시하고 베이스 이미지도 vLLM 권장 조합으로 사용.
+* datasets에서 데이터 로드한다면 → datasets==2.21.0 추가
+---
+* 버전 고정(pinning) 권장: 재빌드 시 재현성 확보. 특히 transformers는 attn_implementation="flash_attention_2" 인자를 지원하는 버전(4.36+)이어야 합니다. 위 4.44.2는 충족해요.
+* transformers ↔ flash-attn 궁합: transformers가 flash-attn을 호출할 때 API가 맞아야 하므로, transformers를 너무 올드하게 두지 마세요.
+* torch 의존 패키지 주의: accelerate 등이 torch를 끌고 올 수 있는데, 이미 설치돼 있으면 pip이 건너뜁니다. 그래도 확실히 하려면 pip install --no-deps로 개별 관리하거나, 빌드 로그에서 torch가 재설치되지 않는지 확인하세요.
+
 #### 빌드가 귀찮다면: flash-attn 포함 베이스 이미지 ####
 직접 빌드를 피하고 싶으면 flash-attn이 이미 들어있는 NGC 이미지를 쓰면 된다.
 ```
@@ -408,3 +439,5 @@ spec:
       operator: Exists
       effect: NoSchedule
 ```
+
+
