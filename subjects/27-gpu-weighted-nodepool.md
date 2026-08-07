@@ -296,3 +296,115 @@ class Attention(nn.Module):
 attention_backend()는 "결정"만 하고, 실제 "바인딩"은 다음 중 하나에서 발생한다. 
 
 
+### 4. 사전 준비 (빌드 의존성) ###
+
+flash-attn은 CUDA 커널을 컴파일해서 설치하므로, 순서가 중요:
+
+```
+pip install torch          # flash-attn보다 먼저 (설치돼 있어야 함)
+pip install packaging ninja
+pip install flash-attn --no-build-isolation
+```
+* torch 먼저: flash-attn 빌드가 설치된 torch 버전을 참조.
+* ninja: 없으면 컴파일이 수십 분~몇 시간 걸릴 수 있어요. ninja를 깔면 병렬 빌드로 훨씬 빨라짐.
+* nvcc(CUDA Toolkit): 소스 빌드 시 필요합니다. 다만 최근에는 조건이 맞으면 prebuilt wheel을 받아 빌드를 건너뛰기도 함.
+
+#### 설치 시 흔한 주의점 ####
+* GPU 요구사항: FlashAttention-2는 Ampere(sm_80) 이상만 지원. 앞서 얘기한 대로 g4dn(T4, sm_75)에서는 설치돼도 실행 시 에러납니다. → 그래서 코드의 else 분기(SDPA)로 내려간다.
+* 버전 궁합: torch / CUDA / flash-attn 버전이 맞아야 wheel을 받는다.. 안 맞으면 소스 빌드로 넘어가고, 이때 시간이 오래 걸리거나 실패할 수 있다.
+* 컨테이너/CI: 빌드 시간 때문에 Dockerfile에서는 보통 미리 빌드하거나, PyTorch 공식 이미지(nvidia/pytorch 등 flash-attn 포함)나 사전 빌드 wheel을 쓰는 걸 권장
+
+
+### 5. 컨테이너 이미지 준비 ###
+
+GPU 드라이버는 AMI(호스트) 레벨, CUDA 런타임·PyTorch·flash-attn은 컨테이너 레벨이다.. flash-attn은 AMI에 기본으로 깔려 있지 않다.
+
+#### 레이어별 정리 ####
+```
+레이어	무엇이 사나	어디에
+호스트/AMI	NVIDIA GPU 드라이버, NVIDIA Container Toolkit, (EKS면) device plugin	AMI 레벨 ✅
+컨테이너 이미지	CUDA 런타임, cuDNN, PyTorch, flash-attn	컨테이너 안 ✅
+```
+* 드라이버: 커널 모듈이라 호스트에 있어야 하고, 컨테이너가 공유해서 쓴다.
+* CUDA 툴킷/런타임 + PyTorch + flash-attn: 보통 컨테이너 이미지 안에 넣는다. (컨테이어 이식성의 핵심)
+  
+#### AWS ####
+Deep Learning AMI(DLAMI) / EKS GPU-optimized AMI
+```
+드라이버는 미리 깔려 있고, G 타입 인스턴스에 이 AMI를 쓰면 드라이버 설치는 신경 쓰지 않아도 된다.
+하지만 flash-attn은 AMI에 없다.. flash-attn은 파이썬/CUDA 레벨 라이브러리라 컨테이너(또는 그 안의 venv)에서 설치해야 한다.
+```
+
+컨테이너로 돌린다면 (EKS/Karpenter 시나리오)
+
+* 호스트(GPU AMI): 드라이버 + Container Toolkit + NVIDIA device plugin → GPU 노출
+* 앱 컨테이너: CUDA 런타임 + PyTorch + flash-attn을 이미지에 빌드해 넣어야 함
+
+즉 pip install flash-attn은 Dockerfile 안에서 하는 것이다.직접 빌드하기 싫으면 flash-attn이 사전 설치된 베이스 이미지를 쓰면 된다.
+(이 경우 컨테이너 안에 이미 있으니 별도 설치 불필요)
+* NGC PyTorch 컨테이너 (nvcr.io/nvidia/pytorch:xx.xx-py3) — flash-attn 등 다수 포함
+* AWS Deep Learning Containers(DLC) 일부 버전
+
+#### 주의점 ####
+* 드라이버 ↔ CUDA 버전 궁합: 호스트 드라이버 버전이 컨테이너의 CUDA 런타임을 지원해야 합니다. 드라이버가 컨테이너 CUDA보다 같거나 새 버전이어야 한다.(CUDA forward compatibility).
+* g4dn(T4)에서는 flash-attn 무의미: 어느 레이어에 깔든 T4(sm_75)는 FlashAttention-2 실행이 안 된다. 그래서 앞서 만든 SDPA/eager fallback 필요.
+  
+#### Dockerfile ####
+
+flash-attn은 빌드에 nvcc가 필요하지만 런타임엔 불필요하므로, 빌드는 devel 이미지에서 하고 결과만 런타임 이미지로 복사해 최종 이미지를 가볍게 만든다.(멀티스테이지 권장)
+
+```
+# ---------- 1) build stage: flash-attn 컴파일 ----------
+FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel AS builder
+# devel 이미지 = nvcc 포함 (flash-attn 빌드에 필요)
+
+ENV DEBIAN_FRONTEND=noninteractive
+# 빌드 대상 아키텍처만 지정해 빌드 시간 단축
+# 8.0=A100(p4), 8.6=A10G(g5), 8.9=L4(g6), 9.0=H100(p5)  → T4(7.5)는 미지원이라 제외
+ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+ENV MAX_JOBS=4
+
+RUN pip install --no-cache-dir packaging ninja
+# ninja가 있어야 병렬 빌드로 훨씬 빠름
+RUN pip install --no-cache-dir flash-attn==2.6.3 --no-build-isolation
+
+# ---------- 2) runtime stage: 실행에 필요한 것만 ----------
+FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+# runtime 이미지 = nvcc 없음, 크기 작음. 드라이버는 노드에서 제공됨.
+
+# builder에서 설치된 flash-attn 등 site-packages 복사
+COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt   # transformers 등 앱 의존성
+COPY . .
+
+CMD ["python", "serve.py"]
+```
+site-packages 경로의 파이썬 버전(예: python3.11)은 베이스 이미지에 맞게 확인. docker run --rm pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime python -c "import sys;print(sys.path)"로 확인
+
+#### 빌드가 귀찮다면: flash-attn 포함 베이스 이미지 ####
+직접 빌드를 피하고 싶으면 flash-attn이 이미 들어있는 NGC 이미지를 쓰면 된다.
+```
+FROM nvcr.io/nvidia/pytorch:24.07-py3   # flash-attn 등 사전 포함
+WORKDIR /app
+COPY . .
+CMD ["python", "serve.py"]
+```
+
+#### 샘플 파드스팩 ####
+이미지 하나로 g5/g6/g7 ↔ g4dn 모두 커버하고, 스케줄링만 노드풀에 맡긴다.
+```
+spec:
+  containers:
+    - name: infer
+      image: <your-ecr>/attn-app:latest
+      resources:
+        limits:
+          nvidia.com/gpu: 1        # device plugin이 노출한 GPU 요청
+  tolerations:
+    - key: nvidia.com/gpu          # GPU 노드 taint 허용
+      operator: Exists
+      effect: NoSchedule
+```
