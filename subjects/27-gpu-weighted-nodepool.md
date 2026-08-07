@@ -219,6 +219,13 @@ print("어텐션 백엔드:", attention_backend())
 
 정리하면, GPU 이름·아키텍처(compute capability)·메모리는 PyTorch로 바로 조회 가능하고, 인스턴스 타입만 IMDS나 K8s 라벨로 별도 조회한다. 
 
+> [!NOTE]
+>
+> `eager`는 어텐션을 최적화된 fused 커널 없이, PyTorch 기본 연산으로 그대로 계산하는 방식이다. HuggingFace의 attn_implementation="eager"와 같은 개념이다.
+> * FlashAttention / SDPA(flash): softmax·matmul을 하나의 커널로 융합(fuse), N×N 어텐션 행렬을 메모리에 안 만듦 → 빠르고 메모리 절약
+> * eager: softmax(QKᵀ/√d) @ V를 단계별 PyTorch 연산으로 순진하게(naive) 계산 → N×N 행렬을 실제로 메모리에 만듦 → 느리고 메모리 많이 씀
+> 즉 eager는 "특별한 가속 커널을 안 쓰는 기본 구현"이라는 의미이다.
+
 
 ## attention 가속 설정 ##
 
