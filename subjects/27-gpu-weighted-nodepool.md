@@ -196,10 +196,9 @@ print("인스턴스 타입:", get_ec2_instance_type())  # 예: g5.2xlarge
 ```
 EKS/파드 환경에서는 IMDS 접근이 막혀 있을 수 있다. 그럴 땐 Karpenter/Kubernetes가 노드에 붙여주는 라벨(node.kubernetes.io/instance-type, karpenter.k8s.aws/instance-family 등)을 파드에 Downward API 환경변수로 주입해서 읽는 방식이 더 안정적이다.
 
-### 3. 앞선 블로그 시나리오와 연결 — 런타임 GPU 감지로 어텐션 경로 분기 ###
+### 3. 런타임 GPU 감지로 어텐션 경로 분기 ###
 
-fallback으로 어떤 GPU에 떨어졌는지에 따라 FlashAttention을 켤지 결정할 수 있다. FlashAttention-2는 Ampere(CC 8.0) 이상이 필요하니, g4dn(T4, CC 7.5)로 fallback되면 자동으로 일반 어텐션 경로로 내려가게 하면 된다.
-
+fallback 이 동작하게 된 경우 어떤 GPU에 떨어졌는지에 따라 FlashAttention을 켤지 결정할 수 있다. FlashAttention-2는 Ampere(CC 8.0) 이상이 필요하니, g4dn(T4, CC 7.5)로 fallback되면 자동으로 일반 어텐션 경로로 내려가게 하면 된다.
 
 ```
 import torch
@@ -215,9 +214,10 @@ def attention_backend():
 
 print("어텐션 백엔드:", attention_backend())
 ```
+
 이렇게 해두면 "g5/g6/g7 Spot이면 FlashAttention, g4dn으로 fallback되면 eager"가 코드 레벨에서 자동으로 처리돼서, 앞서 얘기한 ICE fallback 시에도 배치가 죽지 않는 구성과 딱 맞물린다.
 
-정리하면, GPU 이름·아키텍처(compute capability)·메모리는 PyTorch로 바로 조회 가능하고, 인스턴스 타입만 IMDS나 K8s 라벨로 별도 조회한다. 필
+정리하면, GPU 이름·아키텍처(compute capability)·메모리는 PyTorch로 바로 조회 가능하고, 인스턴스 타입만 IMDS나 K8s 라벨로 별도 조회한다. 
 
 
 ## attention 가속 설정 ##
