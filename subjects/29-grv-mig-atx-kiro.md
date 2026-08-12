@@ -161,4 +161,21 @@ docs: add Graviton migration runbook
 ```
 
 
-폴더를 하나 열어주시면 위 샘플을 실제 파일로 만들고, Docker 기반 스캔 도구까지 돌려서 진짜 리포트를 뽑아 드릴게요. 어느 방법으로 진행할까요?
+## Kiro Power ##
+Kiro Power(키로 파워)는 Kiro에 특정 분야의 전문 작업 능력을 통째로 끼워 넣는 확장 패키지예요. 세 가지를 하나로 묶은 겁니다.
+
+* 문서(POWER.md) — 그 작업을 어떻게 수행하는지에 대한 지침과 워크플로
+* 스티어링 파일 — 상황별 세부 작업 가이드 (예: CI/CD 파이프라인 조정법, Karpenter 설정법)
+* MCP 서버(선택) — 실제로 뭔가를 실행하는 도구들. 있으면 Power 인터페이스를 통해 호출됩니다.
+한 줄로: MCP가 "도구 하나 붙이기"라면, Power는 "지식 + 가이드 + 도구를 묶은 완성된 작업 역량 세트" 입니다. 제가 그 분야 전문가처럼 일할 수 있게 해줘요.
+
+### 지금 제 환경에 설치된 Power 2개 ###
+`1. aws-transform` — 대규모 코드 마이그레이션/현대화 (.NET Framework → .NET 8/10, COBOL → Java, VMware → EC2, DB → Aurora, Java/SDK 버전 업그레이드 등). ATX 계열이고 MCP 서버는 aws-transform-mcp.
+
+`2. graviton-migration-power` — x86 → AWS Graviton(Arm64) 마이그레이션 전용. Arm이 제공하는 arm-mcp 기반이라 ATX와는 다른 도구. 코드 Arm 호환성 스캔, Docker 이미지 아키텍처 점검, Arm 지식베이스 검색 같은 진단 도구를 제공.
+
+앞서 정리하다 만 핵심 포인트가 이거였어요: "Graviton"이라고만 하면 키워드상 Arm 기반 graviton-migration-power가 먼저 잡히고, ATX 자동 변환을 원하면 aws-transform을 명시해야 한다는 점.
+
+
+
+
