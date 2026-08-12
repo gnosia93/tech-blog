@@ -177,5 +177,31 @@ Kiro Power(키로 파워)는 Kiro에 특정 분야의 전문 작업 능력을 �
 앞서 정리하다 만 핵심 포인트가 이거였어요: "Graviton"이라고만 하면 키워드상 Arm 기반 graviton-migration-power가 먼저 잡히고, ATX 자동 변환을 원하면 aws-transform을 명시해야 한다는 점.
 
 
+### 설치하기 ###
+
+Power 설치는 코드로 하는 게 아니라 Kiro의 Powers 관리 패널에서 합니다. 다만 각 Power마다 사전 준비물이 다르니 그것부터 정리할게요.
+
+#### 공통 — 설치 방법 ####  
+Kiro의 Powers 관리 패널에서 설치·활성화·비활성화를 합니다. 접근 방법:
+
+* 명령 팔레트(⌘⇧P)에서 "Powers" 검색, 또는
+* 좌측 기능 패널의 Powers 섹션
+패널에서 원하는 Power를 찾아 설치(enable)하면 돼요.
+
+#### Power별 사전 준비물 ####
+
+
+`1. graviton-migration-power (Arm)` 
+
+* Docker Desktop 필수 — arm-mcp가 Docker 컨테이너(armlimited/arm-mcp)로 돌아가서, Docker가 안 켜져 있으면 도구 자체가 시작 안 됩니다.
+* (선택) Git — 원격 저장소 스캔용
+* 설치 후 첫 실행 시 Docker가 이미지를 받아옵니다.
+
+`2. aws-transform (ATX)`
+* AWS 자격증명 / IAM 권한 — Transform 서비스 호출 권한 필요
+* Node.js 20+, Git, 그리고 프로젝트에 맞는 JDK(Arm64 빌드)·Maven/Gradle
+* Java x86 → Graviton 변환은 빌드/테스트 검증 때문에 Arm64 환경(Graviton EC2 또는 Apple Silicon Mac) 에서 실행 권장
+
+
 
 
