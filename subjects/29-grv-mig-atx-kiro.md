@@ -40,7 +40,7 @@ Java 변환은 빌드·테스트 검증을 위해 Arm64 환경(Graviton EC2 인�
 ## 참고 자료: ##
 
 * [Migrating your Java applications to AWS Graviton using AWS Transform custom (AWS Compute Blog)](https://aws.amazon.com/ko/blogs/compute/migrating-your-java-applications-to-aws-graviton-using-aws-transform-custom/)
-* ATX 문서
+* [ATX 문서](https://docs.aws.amazon.com/transform/latest/userguide/custom.html)
 * Graviton용 Agent Skills (GitHub)
 
 원하시면 제 환경의 Graviton 관련 Power로 실제 코드베이스(예: Dockerfile, 의존성 매니페스트)를 스캔해서 마이그레이션 리포트를 만들어 드릴 수도 있어요. 대상 프로젝트를 열어주시면 바로 시작하겠습니다.
