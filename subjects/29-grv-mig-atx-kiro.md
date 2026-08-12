@@ -37,10 +37,128 @@ AWS Graviton은 Arm64 아키텍처 기반 프로세서예요. 다양한 워크�
 
 Java 변환은 빌드·테스트 검증을 위해 Arm64 환경(Graviton EC2 인스턴스 또는 Apple Silicon Mac) 에서 실행하는 게 권장됩니다. x86에서 돌리면 정적 분석만 되고 빌드/테스트 검증은 안 돼요.
 
-## 참고 자료: ##
+### 참고 자료: ###
 
 * [Migrating your Java applications to AWS Graviton using AWS Transform custom (AWS Compute Blog)](https://aws.amazon.com/ko/blogs/compute/migrating-your-java-applications-to-aws-graviton-using-aws-transform-custom/)
 * [ATX 문서](https://docs.aws.amazon.com/transform/latest/userguide/custom.html)
-* Graviton용 Agent Skills (GitHub)
+* [Graviton용 Agent Skills (GitHub)](https://github.com/aws/aws-graviton-getting-started/tree/main/tools/skills)
 
-원하시면 제 환경의 Graviton 관련 Power로 실제 코드베이스(예: Dockerfile, 의존성 매니페스트)를 스캔해서 마이그레이션 리포트를 만들어 드릴 수도 있어요. 대상 프로젝트를 열어주시면 바로 시작하겠습니다.
+
+
+## 마이그레이션 샘플 ##
+
+### 1. 마이그레이션 대상 (Before) ###
+일부러 Arm64에서 문제가 될 만한 요소를 심은 샘플입니다.
+
+pom.xml (문제 부분):
+```
+<dependencies>
+  <!-- 문제 1: x86_64 전용 classifier로 고정된 네이티브 라이브러리 -->
+  <dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <version>4.1.85.Final</version>
+    <classifier>linux-x86_64</classifier>
+  </dependency>
+
+  <!-- 문제 2: 구버전이라 Arm64 네이티브 바이너리 없음 -->
+  <dependency>
+    <groupId>org.xerial.snappy</groupId>
+    <artifactId>snappy-java</artifactId>
+    <version>1.1.8.4</version>
+  </dependency>
+</dependencies>
+```
+
+NativeLibraryLoader.java (문제 부분):
+
+```
+public class NativeLibraryLoader {
+    public void load() {
+        // 문제 3: 아키텍처를 x86으로 하드코딩
+        String libPath = "/opt/native/x86_64/libcompress.so";
+        System.load(libPath);
+    }
+}
+```
+
+Dockerfile (문제 부분):
+
+```
+# 문제 4: amd64 전용 베이스 이미지 태그
+FROM eclipse-temurin:17-jdk-alpine
+COPY target/app.jar /app/app.jar
+CMD ["java", "-jar", "/app/app.jar"]
+```
+
+### 2. 에이전트 분석 결과 (ATX/Power가 찾아내는 것) ###
+```
+항목	파일	Arm64 지원	조치
+netty-transport-native-epoll (linux-x86_64)	pom.xml	❌ classifier 고정	linux-aarch_64 classifier 추가 + 4.1.100으로 업그레이드
+snappy-java 1.1.8.4	pom.xml	❌	1.1.10.5로 업그레이드 (Arm64 바이너리 포함)
+libcompress.so 로딩	NativeLibraryLoader.java	❌	아키텍처 감지 로직으로 교체
+eclipse-temurin:17-jdk-alpine	Dockerfile	❌ (amd64 위주)	멀티아치 태그 eclipse-temurin:17-jdk로 교체
+```
+
+### 3. 수정 후 (After) ###
+pom.xml:
+```
+<dependencies>
+  <dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <version>4.1.100.Final</version>
+    <classifier>linux-x86_64</classifier>
+  </dependency>
+  <!-- Arm64용 classifier 추가 -->
+  <dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <version>4.1.100.Final</version>
+    <classifier>linux-aarch_64</classifier>
+  </dependency>
+
+  <dependency>
+    <groupId>org.xerial.snappy</groupId>
+    <artifactId>snappy-java</artifactId>
+    <version>1.1.10.5</version>
+  </dependency>
+</dependencies>
+```
+
+NativeLibraryLoader.java:
+
+```
+public class NativeLibraryLoader {
+    public void load() {
+        // 아키텍처를 런타임에 감지해서 경로 선택
+        String arch = System.getProperty("os.arch");
+        String dir = arch.contains("aarch64") || arch.contains("arm")
+                ? "aarch64"
+                : "x86_64";
+        System.load("/opt/native/" + dir + "/libcompress.so");
+    }
+}
+```
+
+Dockerfile:
+
+```
+# amd64/arm64 모두 지원하는 멀티아치 베이스 이미지
+FROM eclipse-temurin:17-jdk
+COPY target/app.jar /app/app.jar
+CMD ["java", "-jar", "/app/app.jar"]
+```
+
+### 4. 커밋 히스토리 (원자적/되돌리기 가능) ###
+
+```
+feat: add Arm64 architecture detection in NativeLibraryLoader
+build: add Arm64 native classifier for netty
+chore(deps): update snappy-java to 1.1.10.5 for Arm64
+build: switch to multi-arch base image
+docs: add Graviton migration runbook
+```
+
+
+폴더를 하나 열어주시면 위 샘플을 실제 파일로 만들고, Docker 기반 스캔 도구까지 돌려서 진짜 리포트를 뽑아 드릴게요. 어느 방법으로 진행할까요?
