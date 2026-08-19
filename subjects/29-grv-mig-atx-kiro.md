@@ -291,3 +291,88 @@ Welcome to AWS Transform. You can discover, create, and execute transformations 
 >
 ```
 
+```
+> 넌 누구니?
+>
+
+📝 Conversation log: /Users/soonbeom/.aws/atx/custom/20260819_054850_f1eb15fe/logs/2026-08-19T05-48-51-conversation.log
+📊 Monitor progress: tail -f /Users/soonbeom/.aws/atx/custom/20260819_054850_f1eb15fe/logs/2026-08-19T05-48-51-conversation.log
+If interrupted, you can resume this conversation by running: atx --conversation-id 20260819_054850_f1eb15fe
+
+ATX: 저는 AWS Transform CLI입니다. AWS Transform custom 기능을 기반으로 코드 및 인프라 변환 작업을 도와드립니다.
+
+주요 기능으로는:
+
+- 변환 정의(Transformation Definition) 생성, 수정, 게시
+- 기존 변환 조회 및 코드베이스에 적용
+- 리포지토리 스캔을 통한 변환 추천
+- 변환 정의 품질 검토
+
+코드 현대화나 마이그레이션 프로젝트에서 변환 작업이 필요하시면 도와드리겠습니다. 무엇을 도와드릴까요?
+
+
+> 코드 현대화?  마이그레이션?
+
+
+ATX: 네, 간단히 설명드릴게요.
+
+AWS Transform custom은 AI 기반의 코드 변환 서비스입니다. 주로 이런 작업들을 도와드립니다:
+
+코드 현대화 (Modernization):
+- 언어 버전 업그레이드: Java 8에서 17로, Python 3.9에서 3.13으로
+- 프레임워크 업그레이드: Spring Boot 2.x에서 3.x, React 17에서 18
+- API 마이그레이션: AWS SDK v1에서 v2, JUnit 4에서 5
+
+마이그레이션 (Migration):
+- 프레임워크 전환: Angular에서 React, Redux에서 Zustand
+- 빌드 시스템 전환: Maven에서 Gradle, Webpack에서 Vite
+- 아키텍처 전환: x86에서 AWS Graviton, 온프레미스에서 Lambda
+- 스크립트 변환: Terraform에서 CloudFormation, Bash에서 PowerShell
+
+작동 방식은 이렇습니다:
+1. 자연어로 변환 규칙을 정의하고
+2. 코드베이스에 자동으로 적용하며
+3. 빌드/테스트로 검증하고
+4. 실행할 때마다 학습하여 품질이 개선됩니다
+
+새로운 변환을 만들거나, 기존 변환을 적용하거나, 리포지토리를 스캔해서 적용 가능한 변환을 추천받을 수도 있습니다. 어떤 작업을 도와드릴까요?
+
+
+> aws transform 과 aws transform custome 은 어떤 차이야?
+
+
+ATX: 좋은 질문이에요. 간단히 정리하면 이렇습니다.
+
+AWS Transform은 전체 포트폴리오(umbrella)이고, AWS Transform custom은 그 안에 포함된 하나의 서비스입니다.
+
+---
+
+AWS Transform (전체 포트폴리오):
+
+여러 전문화된 서비스를 포함합니다:
+- Mainframe: COBOL, PL/I, JCL 등 메인프레임 현대화 전문
+- Windows: .NET Framework에서 .NET Core, SQL Server 마이그레이션 전문
+- VMware: VMware에서 AWS로의 인프라 마이그레이션 전문
+- Assessments: 인프라 평가, 현대화 계획 수립
+- Custom: 범용 코드 변환 (지금 사용 중인 서비스)
+
+AWS Transform web application에서 이 모든 서비스에 접근할 수 있습니다.
+
+---
+
+AWS Transform custom (이 서비스):
+
+범용 코드 변환 서비스로, 특정 플랫폼에 국한되지 않습니다:
+- 자연어로 변환 규칙을 정의
+- 언어 업그레이드, 프레임워크 전환, API 마이그레이션 등 다양한 패턴 지원
+- AWS에서 사전 제작한 변환(AWS-managed transformations)도 제공
+- 사용자가 직접 커스텀 변환을 만들 수도 있음
+- CLI(atx)와 웹 앱 모두에서 사용 가능
+
+---
+
+요약하면, 메인프레임/Windows/VMware 같은 특화된 마이그레이션은 각 전문 서비스를 사용하고, 그 외 일반적인 코드 변환 작업은 AWS Transform custom으로 처리하는 구조입니다.
+
+더 궁금한 점 있으시면 말씀해주세요!
+```
+
