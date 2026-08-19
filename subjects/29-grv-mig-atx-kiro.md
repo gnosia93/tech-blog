@@ -721,3 +721,118 @@ ATX: 말 그대로, AWS Managed 변환(AWS/ 접두사가 붙은 것들)은 AWS�
 
 더 궁금한 점 있으시면 말씀해주세요. 아니면 Node.js Graviton 변환 생성을 이어갈까요?
 ```
+
+### 6. claude code ###
+
+```
+> 너를 clausde code 에 에서도 실행할 수 있어?
+
+
+ATX: 아니요, AWS Transform CLI(atx)는 Claude Code와는 별개의 독립적인 도구입니다. 터미널에서 직접 실행하는 CLI이고, Claude Code 안에서 동작하는 것이 아닙니다.
+
+AWS Transform CLI를 사용하려면:
+
+- 터미널에서 atx 명령어로 실행
+- AWS 계정과 적절한 IAM 권한 필요
+- Linux, macOS, WSL 환경 지원 (Windows 네이티브는 미지원)
+- Node.js 20 이상, Git 필요
+
+설치 및 시작 방법은 공식 문서를 참고해주세요: https://docs.aws.amazon.com/transform/latest/userguide/custom-get-started.html
+
+다른 궁금한 점 있으시면 말씀해주세요. 아니면 Node.js Graviton 변환 생성을 계속할까요?
+
+
+> claude skill 관련해서 뭔가  뭔가 제공되는 것 같던데.
+
+
+ATX: 아, 클라이언트 사이드 스킬(Client-Side Skills)에 대해 물어보시는 것 같네요.
+
+AWS Transform CLI는 스킬 디렉토리 구조를 지원하는데, 일부 경로는 "cross-client" 용도로 설계되어 있습니다:
+
+프로젝트 레벨:
+- `<project>/.aws/atx/skills/` — CLI 전용
+- `<project>/.agents/skills/` — 크로스 클라이언트 (호환되는 다른 에이전트 도구에서도 사용 가능)
+
+사용자 레벨:
+- `~/.aws/atx/skills/` — CLI 전용
+- `~/.agents/skills/` — 크로스 클라이언트 (호환되는 다른 에이전트 도구에서도 사용 가능)
+
+`.agents/skills/` 경로에 놓인 스킬은 AWS Transform CLI뿐 아니라 이 디렉토리 규약을 지원하는 다른 호환 에이전트 도구에서도 인식할 수 있도록 설계된 것입니다. Claude Code가 이 규약을 지원하는지는 Claude Code 쪽 문서를 확인해보시는 게 좋겠습니다.
+
+스킬 구조는 이렇게 생겼습니다:
+
+```
+my-skill/
+├── SKILL.md          # 필수: YAML frontmatter + 지시사항
+├── references/       # 선택: 참조 문서
+└── scripts/          # 선택: 실행 가능한 스크립트
+```
+
+더 자세한 내용이 필요하시면 말씀해주세요!
+
+
+> 잘 이해가 안되는데, 그냥.  스킬 파일만 만들어 ㄷ둔다는 거지?
+
+
+ATX: 네, 맞아요. 간단하게 말하면:
+
+정해진 디렉토리에 스킬 폴더를 만들어두면, 변환 실행 시 에이전트가 자동으로 인식해서 추가 기능으로 활용합니다.
+
+예를 들어, 프로젝트에 커스텀 검증 스킬을 추가하고 싶으면:
+
+```
+my-project/.agents/skills/my-validation/
+├── SKILL.md
+```
+
+SKILL.md 안에는:
+
+```
+---
+name: my-validation
+description: 빌드 후 커스텀 검증 규칙 적용
+---
+
+# 검증 규칙
+
+1. 모든 API 응답에 에러 핸들링이 있는지 확인
+2. 로깅이 표준 포맷을 따르는지 확인
+...
+```
+
+이게 전부예요. 별도 설치나 등록 없이, 폴더에 넣어두기만 하면 됩니다.
+
+변환을 실행할 때 에이전트가 해당 디렉토리를 스캔하고, 스킬을 발견하면 자동으로 로드해서 사용합니다. 스킬이 유효하지 않으면 건너뛰고 로그에 경고만 남기고요.
+
+Node.js Graviton 변환 생성을 이어갈까요, 아니면 다른 궁금한 점 있으신가요?
+
+
+> 다시 확인 할께. 결국  스킬 파일만 만들어 ㄷ주는 것이고, 변환 자체는 해당  에이전트 툴이 해 주는 거다?
+
+
+ATX: 네, 정확합니다.
+
+- 스킬 파일: 에이전트에게 "이렇게 해라"라는 지시사항을 제공하는 것
+- 변환 실행: 에이전트가 그 지시사항을 읽고 실제 코드 변환을 수행하는 것
+
+스킬은 설명서이고, 에이전트가 실행자입니다.
+
+`.agents/skills/` 경로에 넣어두면 그 규약을 지원하는 호환 에이전트 도구가 알아서 읽고 활용하는 구조입니다.
+
+다른 궁금한 점 있으시면 말씀해주세요!
+
+
+> .agents/skills 이 구조는  공통 구조인거야?
+
+
+ATX: 솔직히 말씀드리면, `.agents/skills/`는 AWS Transform CLI에서 "cross-client"로 명명한 경로입니다. 즉, AWS Transform 쪽에서 다른 에이전트 도구와도 호환될 수 있도록 의도한 규약이에요.
+
+하지만 이게 업계 전체의 공식 표준인지, 또는 어떤 다른 에이전트 도구들이 실제로 이 경로를 지원하는지는 제가 확인해드리기 어렵습니다. 각 도구의 문서를 직접 확인해보시는 게 정확합니다.
+
+AWS Transform CLI 기준으로 정리하면:
+
+- `.aws/atx/skills/` — AWS Transform CLI만 인식
+- `.agents/skills/` — AWS Transform CLI도 인식하고, 같은 규약을 채택한 다른 도구도 인식할 수 있도록 열어둔 경로
+
+다른 궁금한 점 있으시면 말씀해주세요!
+```
