@@ -66,6 +66,66 @@ Claude Skills = 별개 벤더의 스킬 패키지 (Graviton 노하우를 담을 
 런타임 검증은 Arm64에서만. 방금 얘기한 것처럼 빌드 검증·테스트 실행은 Graviton(Arm64) 환경에서 돌려야 제대로 됩니다. x86 환경이면 정적 분석까지만 가능해요.
 원하시면 이렇게 시작해볼 수 있어요. 대상 자바 프로젝트를 열어주시면 → (1) x86 종속 지점 스캔 리포트 → (2) 빌드 설정 멀티아키 패치 → (3) 테스트·CI 보강 → (4) migration notes/runbook 생성 순서로 진행할게요. 어느 것부터 해볼까요?
 ```
+```
+아.. power 없이도.. 이걸 다 할수 있다는 것이고, power 를 깔면.. atx custom 꺼 쓴다?
+
+Kiro
+
+Thought complete
+So the user is clarifying that Kiro can handle analysis, refactoring, tests, and documentation independently, but adding the Power enables AWS Transform custom transformations instead.
+네, 정확히 이해하셨어요. 두 가지를 구분해서 확인해드릴게요.
+
+Power 없이 (그냥 저, Kiro만으로) 제가 범용 코딩 에이전트로서 코드를 읽고, 빌드 설정을 고치고, 테스트를 짜고, 문서를 만드는 걸 직접 합니다. 정해진 변환 레시피 없이 그때그때 프로젝트를 보고 판단해서 작업하는 방식이에요. 유연하지만, "AWS가 검증한 표준 절차"는 아니고 제 판단에 의존합니다.
+
+Power를 깔면 (AWS Transform용 Kiro Power) 저를 통해 AWS Transform custom(atx custom)의 관리형 변환을 실행하게 됩니다. 예를 들어 AWS/early-access-java-x86-to-graviton 같은, AWS가 만들고 검증한 정해진 변환 레시피를 돌리는 거예요. 앞서 문서에서 확인한 것처럼 Kiro Power, VS Code 플러그인, atx CLI가 다 같은 변환을 실행하니까, Power를 깔면 Kiro가 그 변환의 실행 창구가 되는 거죠.
+
+핵심 차이를 한 줄로:
+
+Power 없이	Power 있으면
+누가 작업을 설계?	제(Kiro)가 즉석 판단	AWS가 만든 검증된 변환 레시피
+일관성/재현성	상황마다 다를 수 있음	대규모로 일관·반복 가능
+적합한 상황	앱 하나 유연하게 손볼 때	수십~수백 앱 표준화해 이관할 때
+그래서 정리하면 이렇게 보시면 돼요.
+
+둘 다 결국 저(Kiro)를 통해 실행되지만,
+Power 없이는 = 제 범용 능력으로 직접, Power 있으면 = atx custom의 검증된 변환을 실행
+한 가지 뉘앙스만 덧붙이면, Power를 깔아도 제가 사라지는 게 아니에요. 보통 Power로 표준 변환을 돌린 뒤, 남는 케이스나 프로젝트 고유 이슈는 제가 범용 능력으로 마저 처리하는 식으로 둘을 섞어 쓰는 게 실무에선 가장 강력합니다.
+
+Est. Credits Used: 0.62
+Elapsed time: 20s
+
+
+Checkpoint
+Restore
+power 도 여러종류의 플러그인이 있는 거지 ?
+
+Kiro
+
+Thought complete
+I'm recalling the curated powers list I pulled earlier—Datadog, Dynatrace, Figma, Neon, Netlify, Postman, Supabase, Stripe, Strands SDK, and AWS Aurora—plus the option for custom powers. Let me verify this range and confirm what's available.
+네, 맞아요. Power는 하나짜리가 아니라 여러 종류의 플러그인 묶음이에요. 각 파워가 특정 서비스나 도구에 대한 전문성을 담고 있죠.
+
+AWS가 큐레이트해서 제공하는 대표 파워들 (앞서 확인한 목록)
+
+Stripe (결제), Supabase (백엔드/DB), Neon (Postgres), AWS Aurora (DB)
+Figma (디자인), Postman (API), Netlify (배포)
+Datadog, Dynatrace (모니터링/옵저버빌리티)
+Strands SDK (에이전트 개발)
+그리고 지금까지 얘기한 AWS Transform 계열 (Graviton 이관 등 코드 변환)
+직접 만들거나 가져오는 커스텀 파워도 가능
+
+공개 GitHub URL에서 임포트하거나
+로컬 폴더에서 임포트 (사내/비공개용)
+직접 제작 (plugin.json + skills + mcp.json 등으로 구성)
+즉 "설치할 수 있는 파워 = 여러 개"이고, 각각이 다른 영역을 담당합니다. 그리고 앞서 얘기한 동적 로딩 덕분에, 여러 개를 깔아둬도 작업 내용에 맞는 파워만 그때그때 켜져요. 결제 얘기하면 Stripe가, DB 작업하면 Supabase가, Graviton 이관하면 AWS Transform 파워가 활성화되는 식이죠.
+
+한 가지 구분만 해두면, AWS Transform "custom"의 여러 **변환(transformation)**과 여러 파워는 다른 층위예요.
+
+파워 여러 종류 = Stripe, Figma, AWS Transform 등 서로 다른 도구별 플러그인
+변환 여러 종류 = AWS Transform 파워 안에서 실행하는 AWS/java-version-upgrade, AWS/early-access-java-x86-to-graviton 같은 개별 레시피들
+그래서 "AWS Transform 파워 하나" 안에 "여러 변환"이 들어있고, 그 파워는 "여러 파워 중 하나"인 구조입니다. 특정 파워를 설치하거나 만들어보고 싶으시면 도와드릴게요.
+```
+
 
 
 
