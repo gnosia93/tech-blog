@@ -125,8 +125,16 @@ Strands SDK (에이전트 개발)
 변환 여러 종류 = AWS Transform 파워 안에서 실행하는 AWS/java-version-upgrade, AWS/early-access-java-x86-to-graviton 같은 개별 레시피들
 그래서 "AWS Transform 파워 하나" 안에 "여러 변환"이 들어있고, 그 파워는 "여러 파워 중 하나"인 구조입니다. 특정 파워를 설치하거나 만들어보고 싶으시면 도와드릴게요.
 ```
-* https://github.com/kirodotdev/powers/tree/main/aws-graviton-migration 
+* graviton-migration-power - https://github.com/kirodotdev/powers/tree/main/aws-graviton-migration
+```
+displayName	Plan and Migration to Graviton Power
+description	Analyzes source code to identify compatibilities with Graviton processors(Arm64 architecture). Generates reports with incompatibilities and provides suggestions for minimal required and recommended versions for language runtimes and dependency libraries.
 
+Supported Languages: C++, Python, Go, JavaScript, Java Container Runtime: Docker required MCP Server: arm-mcp (Docker-based)
+```  
+
+* arm-mcp - https://hub.docker.com/r/armlimited/arm-mcp
+  
 
 
 
