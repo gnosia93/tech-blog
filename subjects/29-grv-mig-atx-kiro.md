@@ -33,6 +33,41 @@ ATX: 이 시나리오에서 제가 할 수 있는 일을 구체적으로 정리�
 - 검증까지 자동화되니 수동 QA 시간 절감
 - 학습이 쌓이니 프로젝트 갈수록 빨라짐
 ```
+```
+Kiro
+
+Thought complete
+The user is asking what I can specifically help with regarding Graviton migrations using this multi-tool approach with AWS Transform Custom and Claude Skills. They want concrete actions and capabilities I can provide in this context. I can help with code analysis to identify x86-specific incompatibilities, refactor build configurations for multi-architecture support, locate native dependencies that need architecture classifiers, update Dockerfiles for cross-platform builds, write or enhance tests for architecture-sensitive code paths, and generate migration documentation and runbooks. I can also assist with setting up multi-architecture CI pipelines and running transformations through Kiro Power if it's installed. The main constraint is that I'd need a folder open to work directly with their project files, and for actual runtime validation on Arm64 I'd need to be in that environment.
+이 세션 소개글의 맥락(agentic AI로 Graviton 이관을 몇 달 → 며칠로 압축)에서 제가 실제로 도와드릴 수 있는 일을 정리해볼게요. 앞서 나눈 개념들과 딱 연결됩니다.
+
+제가 직접 할 수 있는 것
+1. 코드 분석 / 비호환 지점 식별 프로젝트를 열어주시면 x86 종속 요소를 훑어서 리포트해드려요.
+
+하드코딩된 네이티브 classifier (linux-x86_64 등)
+아키텍처 종속 라이브러리 (netty-tcnative, rocksdbjni, snappy, protobuf 등)
+JNI/네이티브 로딩 코드, 엔디안·동시성 가정이 있는 지점
+2. 빌드 설정 리팩터링 Maven/Gradle을 멀티아키로 고쳐드립니다. (os-maven-plugin/osdetector로 classifier 자동 감지, 프로파일 분기, Dockerfile·Jib 멀티아키 등 — 앞서 예시로 보여드린 그 작업들이에요.)
+
+3. 테스트 보강 아키텍처를 타는 경로(네이티브 실행, 직렬화 왕복, 동시성)에 유닛 테스트를 추가해서 자동 런타임 검증의 신뢰도를 높입니다.
+
+4. 멀티아키 CI 구성 x86과 Arm64 러너 양쪽에서 같은 테스트를 돌리도록 워크플로우를 작성해드려요.
+
+5. 문서 생성 변경 내역을 정리한 migration notes와, 배포·검증·롤백 절차를 담은 runbook 초안을 만들어드립니다.
+
+6. AWS Transform 변환 실행 (Kiro Power) 만약 AWS Transform용 Kiro Power를 설치하시면, 제가 Kiro 안에서 AWS/early-access-java-x86-to-graviton 같은 그 관리형 변환을 실행하는 창구가 될 수 있어요. VS Code 플러그인이나 atx CLI로 하는 것과 동일한 변환이죠.
+
+이 세 도구와 제 관계
+AWS Transform Custom = 대규모 자동 변환 엔진 (본체)
+Kiro Power = 그 변환을 저(Kiro) 안에서 돌리는 입구
+Claude Skills = 별개 벤더의 스킬 패키지 (Graviton 노하우를 담을 수 있는 그릇)
+저(Kiro) = 이 흐름을 오케스트레이션하는 개발 환경. 분석·리팩터링·테스트·문서·CI를 IDE 안에서 이어붙여 줍니다.
+지금의 제약 두 가지 (솔직하게)
+폴더가 안 열려 있어요. 현재 워크스페이스에 열린 폴더가 없어서 파일을 읽거나 고치는 도구를 못 씁니다. 실제 작업을 하려면 대상 프로젝트를 Kiro에서 열어주셔야 해요.
+런타임 검증은 Arm64에서만. 방금 얘기한 것처럼 빌드 검증·테스트 실행은 Graviton(Arm64) 환경에서 돌려야 제대로 됩니다. x86 환경이면 정적 분석까지만 가능해요.
+원하시면 이렇게 시작해볼 수 있어요. 대상 자바 프로젝트를 열어주시면 → (1) x86 종속 지점 스캔 리포트 → (2) 빌드 설정 멀티아키 패치 → (3) 테스트·CI 보강 → (4) migration notes/runbook 생성 순서로 진행할게요. 어느 것부터 해볼까요?
+```
+
+
 
 
 핵심은 원래 몇 달씩 걸리던 x86 → AWS Graviton(Arm64) 마이그레이션을, 에이전트형 AI 도구를 써서 며칠 단위로 줄이는 방법입니다.
