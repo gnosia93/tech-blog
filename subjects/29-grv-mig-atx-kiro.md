@@ -2,6 +2,37 @@
 ```
 Migrating from x86 to Graviton delivers up to 40% better price-performance, yet teams routinely defer it to "Year 2" because they lack understanding of agentic AI tools to accelerate Graviton migrations. This session covers a multi-tool approach that compresses the entire migration lifecycle from months to days. AWS Transform Custom, Claude Skills and Kiro power can help accelerate migrations -- using agentic AI to analyze source code, identify x86-specific incompatibilities, and auto-refactor applications for arm64 at scale. Together, they enable teams to confidently include Graviton in Day 1 proposals rather than deferring better price-performance indefinitely.
 ```
+```
+ATX: 이 시나리오에서 제가 할 수 있는 일을 구체적으로 정리하면:
+
+1. 소스 코드 분석 (Analyze)
+   - 리포지토리를 스캔해서 x86 관련 의존성, 네이티브 모듈, 아키텍처 하드코딩 식별
+   - 어떤 부분이 Graviton 전환에 영향받는지 리포트 생성
+
+2. 변환 규칙 정의 (Define)
+   - 방금 만든 것처럼 Graviton 전환 스킬 파일 작성
+   - 팀/조직 특성에 맞게 커스터마이징 (Java, Node.js, Python 등 언어별)
+   - 참조 문서(마이그레이션 가이드 등) 포함
+
+3. 대규모 자동 리팩토링 실행 (Transform at Scale)
+   - 스킬 파일 기반으로 실제 코드 변환 실행
+   - 빌드/테스트 검증 루프로 동작 보장
+   - 캠페인으로 수십~수백 개 리포에 일괄 적용
+
+4. 스킬 파일 공유 (Enable Other Tools)
+   - 만든 스킬을 `.agents/skills/`에 배치
+   - Claude, Kiro가 같은 규칙을 개발 중에도 참조하도록 지원
+
+5. 지속적 개선 (Learn)
+   - 실행할 때마다 Knowledge Items 축적
+   - 프로젝트마다 다른 엣지 케이스를 학습해서 다음 실행에 반영
+
+결국 "months to days"의 핵심은:
+
+- 수작업으로 하나씩 분석/수정하던 것을 규칙 한 번 정의하고 일괄 적용
+- 검증까지 자동화되니 수동 QA 시간 절감
+- 학습이 쌓이니 프로젝트 갈수록 빨라짐
+```
 
 
 핵심은 원래 몇 달씩 걸리던 x86 → AWS Graviton(Arm64) 마이그레이션을, 에이전트형 AI 도구를 써서 며칠 단위로 줄이는 방법입니다.
