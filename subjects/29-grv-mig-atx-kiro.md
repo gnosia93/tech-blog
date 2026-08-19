@@ -376,3 +376,250 @@ AWS Transform custom (이 서비스):
 더 궁금한 점 있으시면 말씀해주세요!
 ```
 
+### 3. definition 리스트 조회 ### 
+
+```
+> atx custom def list
+```
+
+[결과]
+```
+🔧  Using tool: list_available_transformations_from_registry (trusted)
+ ⋮
+ ● No parameters
+ ⋮
+Found 33 transformation definitions
+  - 33 AWS Managed transformations
+
+🏢 AWS Managed Transformations:
+
+┌─────┬───────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────────┐
+│ #   │ Transformation Name               │ Description                                                                                                        │ Version    │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 1   │ 🏢 AWS/java-aws-sdk-v1-to-v2      │ Upgrade the AWS SDK from V1 to V2 for Java projects using Maven or Gradle.                                         │ 2026-07-31 │
+│     │                                   │                                                                                                                    │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 2   │ 🏢 AWS/nodejs-aws-sdk-v2-to-      │ Upgrade Node.js applications from AWS SDK for JavaScript v2 to v3 to leverage modular architecture, first-class Ty │ 2025-10-16 │
+│     │ v3                                │ peScript support, middleware stack, and improved performance while ensuring all AWS service interactions continue  │            │
+│     │                                   │ to function correctly, without modifying the underlying Node.js version.                                           │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 3   │ 🏢 AWS/python-boto2-to-boto3      │ Migrate Python applications from boto2 to boto3, based on the official AWS migration documentation                 │ 2025-10-16 │
+│     │                                   │                                                                                                                    │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 4   │ 🏢 AWS/python-version-upgrad      │ Migrate Python projects from Python 3.8/3.9 to Python 3.11/3.12/3.13, ensuring compatibility with the latest Pytho │ 2025-10-01 │
+│     │ e                                 │ n features, security updates, and runtime while maintaining functionality and performance. You can specify your de │            │
+│     │                                   │ sired target Python version either through interactive chat with the agent, or by passing an additionalPlanContext │            │
+│     │                                   │  configuration parameter (ex. atx custom def exec --configuration "additionalPlanContext=This is a Python app that │            │
+│     │                                   │  should be upgraded to Python 3.12"). You can also pass this in a configuration file (ex. atx custom def exec --co │            │
+│     │                                   │ nfiguration 'file://config.json'). For an example configuration file, run atx custom def exec -h                   │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 5   │ 🏢 AWS/nodejs-version-upgrad      │ Upgrade NodeJS applications from any source NodeJS version to any target NodeJS version. You can specify your desi │ 2026-02-20 │
+│     │ e                                 │ red target NodeJS version either through interactive chat with the agent, or by passing an additionalPlanContext c │            │
+│     │                                   │ onfiguration parameter (ex. atx custom def exec --configuration "additionalPlanContext=This is a Node.js app that  │            │
+│     │                                   │ should be upgraded to Node.js 22"). You can also pass this in a configuration file (ex. atx custom def exec --conf │            │
+│     │                                   │ iguration 'file://config.json'). For an example configuration file, run atx custom def exec -h                     │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 6   │ 🏢 AWS/java-version-upgrade       │ Upgrade Java applications using any build system from any source JDK version to any target JDK version with compre │ 2025-11-11 │
+│     │                                   │ hensive dependency modernization including Jakarta EE migration, database drivers, ORM frameworks, and Spring ecos │            │
+│     │                                   │ ystem updates. You can specify your desired target JDK version either through interactive chat with the agent, or  │            │
+│     │                                   │ by passing an additionalPlanContext configuration parameter (ex. atx custom def exec --configuration "additionalPl │            │
+│     │                                   │ anContext=This is a Maven app that should be upgraded to Java 21"). You can also pass this in a configuration file │            │
+│     │                                   │  (ex. atx custom def exec --configuration 'file://config.json'). For an example configuration file, run atx custom │            │
+│     │                                   │  def exec -h                                                                                                       │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 7   │ 🏢 AWS/early-access-java-x86      │ Validates Java application compatibility with Arm64 architecture for running on AWS Graviton Processors. Identifie │ 2026-02-06 │
+│     │ -to-graviton                      │ s and resolves Arm64 incompatibilities by updating dependencies, detecting architecture-specific code patterns, an │            │
+│     │                                   │ d recompiling native libraries when source code is available. Makes targeted code modifications necessary for Arm6 │            │
+│     │                                   │ 4 support (architecture detection, native library loading, etc.) but does not perform general code refactoring. Ma │            │
+│     │                                   │ intains current Java version and JDK distribution and validates compatibility through build and test execution. Fo │            │
+│     │                                   │ r optimal results, run in an Arm64-based environment. Note: Many modern Java applications are already Arm64-compat │            │
+│     │                                   │ ible.                                                                                                              │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 8   │ 🏢 AWS/early-access-angular-      │ Transform an Angular application to React with comprehensive validation, including Playwright E2E domain-model tes │ 2026-07-09 │
+│     │ to-react-migration                │ ts and a migration report containing visual regression screenshots and business logic coverage.                    │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 9   │ 🏢 AWS/comprehensive-codebas      │ This transformation performs deep static analysis of codebases to generate hierarchical, cross-referenced document │ 2026-04-14 │
+│     │ e-analysis                        │ ation covering all aspects of the system. It combines behavioral analysis, architectural documentation, and busine │            │
+│     │                                   │ ss intelligence extraction to create a comprehensive knowledge base organized for maximum usability and navigation │            │
+│     │                                   │ . The transformation places special emphasis on technical debt analysis, providing prominent, actionable insights  │            │
+│     │                                   │ on outdated components and maintenance concerns at the root level.                                                 │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 10  │ 🏢 AWS/java-performance-opti      │ Optimize Java application performance by analyzing JFR profiling data to detect CPU/memory hotspots and anti-patte │ 2026-03-31 │
+│     │ mization                          │ rns, then applying targeted code fixes to reduce resource usage and improve efficiency. Instructions on collecting │            │
+│     │                                   │  JFR data can be found here - https://docs.oracle.com/javacomponents/jmc-5-4/jfr-runtime-guide/run.htm.            │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 11  │ 🏢 AWS/early-access-log4j-to      │ This transformation migrates Java applications from Log4j (1.x/2.x) to SLF4J with Logback backend. Handles source  │ 2026-03-31 │
+│     │ -slf4j-migration                  │ code, dependency management (Maven/Gradle), and logging configuration files. Validates via compile, test, and resi │            │
+│     │                                   │ dual import scan.                                                                                                  │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 12  │ 🏢 AWS/angular-version-upgra      │ This is an early-access transformation to transform an older Angular application to a target Angular version by up │ 2026-03-31 │
+│     │ de                                │ grading components, services, templates, and routing to modern Angular patterns.                                   │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 13  │ 🏢 AWS/vue.js-version-upgrad      │ An early-access transformation for major version upgrades from Vue.js 2 to Vue.js 3 to modernize components, state │ 2026-03-31 │
+│     │ e                                 │  management, routing, and global APIs to Vue.js 3 patterns. Minor or patch updates are outside the scope.          │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 14  │ 🏢 AWS/agentic-readiness-ana      │ This is an early-access transformation that evaluates whether systems are ready to be safely called by AI agents - │ 2026-05-14 │
+│     │ lysis                             │  covering APIs, identity, state management, human-in-the-loop, and observability.                                  │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 15  │ 🏢 AWS/modernization-readine      │ This is an early-access transformation that scans portfolios for cloud-native maturity gaps and maps findings to A │ 2026-05-14 │
+│     │ ss-analysis                       │ WS modernization pathways.                                                                                         │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 16  │ 🏢 AWS/oracle-java-to-corret      │ This is an early-access transformation that migrates Java projects from Oracle JDK to Amazon Corretto. Replaces Or │ 2026-05-14 │
+│     │ to                                │ acle-specific internal APIs (sun.*, com.sun.*, com.oracle.*) with standard Java equivalents, updates build configu │            │
+│     │                                   │ rations (Maven/Gradle), replaces container base images (Oracle, eclipse-temurin, openjdk, adoptopenjdk) with amazo │            │
+│     │                                   │ ncorretto, updates CI workflow distribution fields, removes commercial JVM flags, fixes annotation-processor JDK i │            │
+│     │                                   │ ncompatibilities (Lombok), handles Alpine-to-Amazon-Linux package translation, and generates a LICENSING_REPORT.md │            │
+│     │                                   │  with cost savings. Triggers: Oracle JDK migration, Corretto migration, Java vendor switch, JDK licensing, sun.mis │            │
+│     │                                   │ c replacement, Alpine Docker migration, Gradle multi-module.                                                       │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 17  │ 🏢 AWS/oracle-service-bus-to      │ This is an early-access transformation that migrates Oracle Service Bus (OSB) and BPEL process configurations to A │ 2026-05-14 │
+│     │ -aws                              │ WS-native serverless architecture by generating a deployable CDK TypeScript project with API Gateway, Lambda, and  │            │
+│     │                                   │ Step Functions from OSB proxy/pipeline/business service XML definitions.                                           │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 18  │ 🏢 AWS/JBoss-to-Spring-Boot       │ This is an early-access transformation that migrates Java EE/Jakarta EE enterprise applications running on JBoss E │ 2026-06-18 │
+│     │                                   │ AP or WildFly application servers to Spring Boot, eliminating application server dependencies, modernizing to a cl │            │
+│     │                                   │ oud-native containerized deployment model, and improving developer productivity, deployment velocity, and resource │            │
+│     │                                   │  efficiency.                                                                                                       │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 19  │ 🏢 AWS/datadog-monitors-to-c      │ This is an early-access transformation that migrates DataDog Metric Monitors (metric alert, query alert) tracking  │ 2026-05-14 │
+│     │ loudwatch-alarms                  │ AWS service metrics (aws.* prefix) and custom metrics (Metric Streams or IAM Role polling integration) to native C │            │
+│     │                                   │ loudWatch Alarms as infrastructure-as-code. Classifies monitors into Standard, Metrics Insights (MI), or Metric Ma │            │
+│     │                                   │ th alarms. Generates CloudFormation YAML, CDK TypeScript, and/or Terraform HCL. Supports JSON exports, Terraform c │            │
+│     │                                   │ onfig (.tf), state (.tfstate), and plan (.tfplan) inputs. Handles ANOMALY_DETECTION_BAND, arithmetic expressions,  │            │
+│     │                                   │ MI SQL fleet monitoring, and .as_count() simplification. Detects DataDog integration type (Metric Streams vs IAM R │            │
+│     │                                   │ ole polling) and resolves custom metric names via CloudWatch list-metrics inventory. Triggers: DataDog migration,  │            │
+│     │                                   │ CloudWatch alarms, monitor conversion, AWS monitoring.                                                             │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 20  │ 🏢 AWS/spring-boot-version-u      │ Migrate Spring Boot 3.x projects to Spring Boot 4.x (targeting 4.1.0 GA). Covers version upgrades, starter renames │ 2026-06-25 │
+│     │ pgrade                            │ , Jackson 3 migration, Spring Security 7 DSL, @MockBean removal, property renames, package relocations, observabil │            │
+│     │                                   │ ity consolidation, Spring AI 2.0, Spring Cloud 2025.1, Spring Batch, Kafka, AMQP, gRPC, Native/AOT, Jersey, JSpeci │            │
+│     │                                   │ fy, embedded server changes, third-party compatibility, and verification.                                          │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 21  │ 🏢 AWS/portfolio-modernizati      │ This is an early-access transformation that aggregates individual Modernization Analysis reports across a portfoli │ 2026-05-18 │
+│     │ on-readiness-analysis             │ o of applications, producing a consolidated modernization roadmap with prioritized migration waves, recommended mo │            │
+│     │                                   │ dernization pathways, and AWS program recommendations including workshops and enablement resources tailored to eac │            │
+│     │                                   │ h portfolio's modernization needs.                                                                                 │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 22  │ 🏢 AWS/portfolio-agentic-rea      │ This is an early-access transformation that aggregates individual Agentic Readiness Analysis reports across a port │ 2026-05-18 │
+│     │ diness-analysis                   │ folio of applications, identifying cross-cutting blockers, shared remediation patterns, and organizational readine │            │
+│     │                                   │ ss gaps. Produces prioritized recommendations mapped to AWS programs, workshops, and enablement resources tailored │            │
+│     │                                   │  to each portfolio's agentic adoption journey.                                                                     │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 23  │ 🏢 AWS/GenAI-to-Bedrock-Migr      │ This early-access transformation assesses generative AI workloads for migration from third-party providers (OpenAI │ 2026-06-05 │
+│     │ ation-Assessment                  │ , Google Gemini, Anthropic direct, and open-source models) to AWS Bedrock by running a five-phase process - discov │            │
+│     │                                   │ ering AI SDK usage and models from application code or billing exports, clarifying migration requirements, designi │            │
+│     │                                   │ ng a compatibility-guided Bedrock model mapping, estimating cost and risk, and generating assessment artifacts (SD │            │
+│     │                                   │ K migration guide, cost estimates, setup scripts, and run books). It is assessment-only and does not modify custom │            │
+│     │                                   │ er source code; it also covers agentic frameworks (CrewAI, LangGraph, Strands/AgentCore) through retarget, harness │            │
+│     │                                   │ , or Strands migration approaches.                                                                                 │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 24  │ 🏢 AWS/vba-to-python-migrati      │ This early-access transformation migrates Excel VBA macros, modules, UserForms, and embedded logic to equivalent P │ 2026-06-05 │
+│     │ on                                │ ython scripts and modules. Replaces Excel-dependent automation with portable, testable Python using openpyxl, pand │            │
+│     │                                   │ as, tkinter/PyQt6, and standard libraries. Source language: VBA. Target language: Python 3.8+. Use when converting │            │
+│     │                                   │  .bas, .cls, .frm, or .xlsm-embedded VBA code to Python.                                                           │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 25  │ 🏢 AWS/ruby-upgrade               │ An early-access transformation that upgrades Ruby applications from Ruby 2.x to Ruby 4.0, and their frameworks to  │ 2026-06-22 │
+│     │                                   │ Rails 8.0 or Sinatra 4.1. Supports Rails/ActiveRecord apps, Sinatra apps, and standalone gems. Pairs each Ruby ver │            │
+│     │                                   │ sion bump with the matching framework upgrade, runs the test suite, and isolates failures before advancing. Active │            │
+│     │                                   │ Record only; Mongoid/MongoDB ODM not supported.                                                                    │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 26  │ 🏢 AWS/lambda-nodejs-runtime      │ This early-access transformation upgrades AWS Lambda functions from older Node.js runtimes (nodejs4.3 through node │ 2026-06-05 │
+│     │ -upgrade                          │ js22.x) to nodejs24.x, addressing all breaking changes in the Lambda Runtime Interface Client (RIC) and Node.js 24 │            │
+│     │                                   │  language runtime.                                                                                                 │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 27  │ 🏢 AWS/security-issue-fixer       │ This transformation fixes security vulnerabilities in source code based on third-party scanner results (SARIF, JSO │ 2026-08-06 │
+│     │                                   │ N, CSV, or plain-text findings with CWE IDs, file paths, and line numbers). It does not perform scanning or discov │            │
+│     │                                   │ ery; it only remediates supplied findings while preserving functional behavior. Covers injection (CWE-78/79/89/90/ │            │
+│     │                                   │ 94/943), broken authentication (CWE-287/306/798), cryptographic failures (CWE-327/328/208), IDOR/authorization (CW │            │
+│     │                                   │ E-639/862/863), CSRF (CWE-352), insecure deserialization (CWE-502), SSRF (CWE-918), path traversal (CWE-22), open  │            │
+│     │                                   │ redirect (CWE-601), XXE (CWE-611), JWT bypass (CWE-347), mass assignment (CWE-915), file upload (CWE-434), clearte │            │
+│     │                                   │ xt transmission (CWE-319), dangerous functions (CWE-242/676/479/489), error handling (CWE-703/252), file permissio │            │
+│     │                                   │ ns (CWE-732/377/829), and secrets exposure. Handles dependency changes with BOM awareness, native-image build vali │            │
+│     │                                   │ dation, and multi-stage CI discovery. Supports Python, JavaScript/TypeScript, Java, Go, C#/.NET, C/C++ and Ruby.   │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 28  │ 🏢 AWS/mulesoft-to-aws-nativ      │ Transforms MuleSoft Mule 3.x/4.x applications into AWS serverless architectures (API Gateway + Lambda + Step Funct │ 2026-06-25 │
+│     │ e-java                            │ ions) targeting Java 17 on Lambda with SnapStart. Maps flow triggers to AWS event sources, converts DataWeave/MEL  │            │
+│     │                                   │ to tiered AWS equivalents (VTL, Step Functions, Lambda), replaces connectors with AWS SDK for Java v2 calls, and o │            │
+│     │                                   │ rchestrates flows with Step Functions. Produces SAM templates, Java Lambda handler code, Maven pom.xml, architectu │            │
+│     │                                   │ re docs, and JUnit 5 tests.                                                                                        │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 29  │ 🏢 AWS/business-rules-extrac      │ An early-access transformation that statically analyzes a monolithic codebase to produce rewrite-ready documentati │ 2026-06-22 │
+│     │ tion                              │ on - without building, running, or modifying source. Decomposes the system into bounded domains and extracts per-d │            │
+│     │                                   │ omain business rules, workflows, cross-cutting concerns, and database structure into a machine-readable manifest a │            │
+│     │                                   │ nd interactive dashboard. Then generates a self-contained, language-neutral implementation specification for each  │            │
+│     │                                   │ domain to guide modernization or rewrite. Language-agnostic.                                                       │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 30  │ 🏢 AWS/payshield-hsm-to-aws-      │ Migrates Java applications from Thales PayShield HSM socket-based command protocol to AWS Payment Cryptography Ser │ 2026-07-29 │
+│     │ payment-cryptography              │ vice (APC) SDK v2. Covers command mapping (M2, CA, DA, KW, CW, CY, etc.), key migration (TR-31/TR-34 import, KCV v │            │
+│     │                                   │ erification), SDK dependency setup (Maven/Gradle/Ant), infrastructure removal (socket pools, response parsers), te │            │
+│     │                                   │ st infrastructure update, and parity testing. Triggers: PayShield, HSM migration, AWS Payment Cryptography, APC, D │            │
+│     │                                   │ UKPT, TranslatePinData, DecryptData, VerifyPinData.                                                                │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 31  │ 🏢 AWS/dotnet-lambda-upgrade      │ Upgrades AWS Lambda .NET functions from older runtimes (.NET Core 3.1, .NET 6, .NET 8) to .NET 10. Covers project  │ 2026-07-09 │
+│     │                                   │ files (.csproj/.fsproj), NuGet packages (Amazon.Lambda.*, AWSSDK.*, Microsoft.Extensions.*), Lambda configuration  │            │
+│     │                                   │ (SAM, Serverless Framework, CDK, Terraform, CloudFormation), Dockerfiles, code modernization, test projects, and a │            │
+│     │                                   │ rtifact paths. Handles managed runtime (dotnet10), Native AOT (provided.al2023), and container-image deployment mo │            │
+│     │                                   │ dels. Trigger keywords: Lambda .NET upgrade, net10.0, TFM migration, dotnet10, Amazon.Lambda, AWSSDK, csproj, fspr │            │
+│     │                                   │ oj, TargetFramework.                                                                                               │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 32  │ 🏢 AWS/websphere-jaxrs-to-be      │ Generates Amazon Bedrock AgentCore tool definitions from the REST endpoints in a WebSphere or Liberty application, │ 2026-07-22 │
+│     │ drock-agentcore                   │  so existing business logic can be called by AI agents. Your application stays where it is: the transformation rea │            │
+│     │                                   │ ds your source code and writes new files to an output directory without changing anything in place. It finds endpo │            │
+│     │                                   │ ints that use the Java API for RESTful Web Services (JAX-RS) in both the javax.ws.rs and jakarta.ws.rs namespaces, │            │
+│     │                                   │  including Enterprise JavaBeans (EJB) exposed through a JAX-RS facade. For each endpoint it maps Java parameters a │            │
+│     │                                   │ nd types to a JSON schema, resolves the HTTP method, and rates its confidence so you know what to review. The outp │            │
+│     │                                   │ ut is a discovery report, a JSON schema per endpoint, tool implementations in Python, and a manifest for registeri │            │
+│     │                                   │ ng them with an AgentCore gateway. Generated code is checked for valid syntax. Java tool output is planned for a l │            │
+│     │                                   │ ater release. Triggers: WebSphere, Liberty, JAX-RS, EJB, AgentCore, Bedrock.                                       │            │
+├─────┼───────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
+│ 33  │ 🏢 AWS/mulesoft-to-aws-nativ      │ Transforms MuleSoft Mule 3.x/4.x applications into AWS serverless architectures (API Gateway + Lambda + Step Funct │ 2026-08-04 │
+│     │ e-python                          │ ions) targeting Python 3.12 on Lambda. Maps flow triggers to AWS event sources, converts DataWeave/MEL to tiered A │            │
+│     │                                   │ WS equivalents (VTL, Step Functions, Lambda), replaces connectors with boto3 AWS SDK calls, and orchestrates flows │            │
+│     │                                   │  with Step Functions. Produces SAM templates, Python Lambda handler code, pinned requirements.txt with a dependenc │            │
+│     │                                   │ y lockfile, architecture docs, a deployment runbook with samconfig.toml, and pytest tests. Triggers: MuleSoft migr │            │
+│     │                                   │ ation, Mule to AWS, DataWeave conversion, connector replacement, SAM template generation, Lambda Powertools Python │            │
+│     │                                   │ , pytest, serverless migration.                                                                                    │            │
+└─────┴───────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────────┘
+
+ ● Completed in 2.1s
+
+ATX: 총 33개의 변환이 발견되었습니다 (AWS Managed 33개, 사용자 변환 0개).
+
+| # | 이름 | 설명 |
+|---|------|------|
+| 1 | AWS/java-aws-sdk-v1-to-v2 | Java AWS SDK V1에서 V2로 업그레이드 (Maven/Gradle) |
+| 2 | AWS/nodejs-aws-sdk-v2-to-v3 | Node.js AWS SDK v2에서 v3로 업그레이드 |
+| 3 | AWS/python-boto2-to-boto3 | Python boto2에서 boto3로 마이그레이션 |
+| 4 | AWS/python-version-upgrade | Python 3.8/3.9에서 3.11/3.12/3.13으로 업그레이드 |
+| 5 | AWS/nodejs-version-upgrade | Node.js 버전 업그레이드 |
+| 6 | AWS/java-version-upgrade | Java 버전 업그레이드 (모든 빌드 시스템) |
+| 7 | AWS/early-access-java-x86-to-graviton | Java x86에서 AWS Graviton(Arm64) 호환성 검증 |
+| 8 | AWS/early-access-angular-to-react-migration | Angular에서 React로 전환 |
+| 9 | AWS/comprehensive-codebase-analysis | 코드베이스 종합 분석 및 문서화 |
+| 10 | AWS/java-performance-optimization | JFR 프로파일링 기반 Java 성능 최적화 |
+| 11 | AWS/early-access-log4j-to-slf4j-migration | Log4j에서 SLF4J/Logback으로 마이그레이션 |
+| 12 | AWS/angular-version-upgrade | Angular 버전 업그레이드 |
+| 13 | AWS/vue.js-version-upgrade | Vue.js 2에서 3으로 업그레이드 |
+| 14 | AWS/agentic-readiness-analysis | AI 에이전트 준비 상태 평가 |
+| 15 | AWS/modernization-readiness-analysis | 현대화 준비 상태 분석 |
+| 16 | AWS/oracle-java-to-corretto | Oracle JDK에서 Amazon Corretto로 전환 |
+| 17 | AWS/oracle-service-bus-to-aws | Oracle Service Bus에서 AWS 서버리스로 전환 |
+| 18 | AWS/JBoss-to-Spring-Boot | JBoss/WildFly에서 Spring Boot로 전환 |
+| 19 | AWS/datadog-monitors-to-cloudwatch-alarms | DataDog 모니터에서 CloudWatch 알람으로 전환 |
+| 20 | AWS/spring-boot-version-upgrade | Spring Boot 3.x에서 4.x로 업그레이드 |
+| 21 | AWS/portfolio-modernization-readiness-analysis | 포트폴리오 현대화 준비 상태 종합 분석 |
+| 22 | AWS/portfolio-agentic-readiness-analysis | 포트폴리오 에이전틱 준비 상태 종합 분석 |
+| 23 | AWS/GenAI-to-Bedrock-Migration-Assessment | GenAI 워크로드 Bedrock 마이그레이션 평가 |
+| 24 | AWS/vba-to-python-migration | Excel VBA에서 Python으로 전환 |
+| 25 | AWS/ruby-upgrade | Ruby 2.x에서 4.0/Rails 8.0으로 업그레이드 |
+| 26 | AWS/lambda-nodejs-runtime-upgrade | Lambda Node.js 런타임 nodejs24.x로 업그레이드 |
+| 27 | AWS/security-issue-fixer | 보안 취약점 수정 (SARIF/JSON/CSV 스캐너 결과 기반) |
+| 28 | AWS/mulesoft-to-aws-native-java | MuleSoft에서 AWS 서버리스(Java)로 전환 |
+| 29 | AWS/business-rules-extraction | 비즈니스 규칙 추출 및 도메인 분해 |
+| 30 | AWS/payshield-hsm-to-aws-payment-cryptography | PayShield HSM에서 AWS Payment Cryptography로 전환 |
+| 31 | AWS/dotnet-lambda-upgrade | .NET Lambda 함수 .NET 10으로 업그레이드 |
+| 32 | AWS/websphere-jaxrs-to-bedrock-agentcore | WebSphere JAX-RS에서 Bedrock AgentCore 도구 생성 |
+| 33 | AWS/mulesoft-to-aws-native-python | MuleSoft에서 AWS 서버리스(Python)로 전환 |
+
+번호나 이름을 입력하면 해당 변환을 조회, 수정, 또는 적용할 수 있습니다. 리포지토리를 스캔해서 적합한 변환을 추천받을 수도 있습니다
+```
