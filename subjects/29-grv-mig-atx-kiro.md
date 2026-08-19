@@ -248,3 +248,46 @@ Next: Run atx --help to get started
 ✔ Installation complete!
 ```
 
+### 2. atx 실행하기 ### 
+```
+atx
+```
+
+[결과]
+```
+ █████╗ ██╗    ██╗███████╗
+██╔══██╗██║    ██║██╔════╝
+███████║██║ █╗ ██║███████╗
+██╔══██║██║███╗██║╚════██║
+██║  ██║╚███╔███╔╝███████║
+╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝
+
+████████╗██████╗  █████╗ ███╗   ██╗███████╗███████╗ ██████╗ ██████╗ ███╗   ███╗
+╚══██╔══╝██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝██╔═══██╗██╔══██╗████╗ ████║
+   ██║   ██████╔╝███████║██╔██╗ ██║███████╗█████╗  ██║   ██║██████╔╝██╔████╔██║
+   ██║   ██╔══██╗██╔══██║██║╚██╗██║╚════██║██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║
+   ██║   ██║  ██║██║  ██║██║ ╚████║███████║██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              Region: us-east-1                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                Trusted Tools                                 │
+│                                                                              │
+│ Built-in Trusted Tools                                                       │
+│   Configuration: Built-in read-only tools                                    │
+│   • file_read                                                                │
+│   • grep                                                                     │
+│   • get_transformation_from_registry                                         │
+│   • list_available_transformations_from_registry                             │
+│   • document_manager (add operations only)                                   │
+│   • editor (view and find_line operations only)                              │
+│                                                                              │
+│ Use -t to trust all, or see /Users/soonbeom/.aws/atx/trust-settings.yaml     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Welcome to AWS Transform. You can discover, create, and execute transformations (AWS-managed or custom ones published to your registry). How can I help?
+>
+```
+
