@@ -220,5 +220,31 @@ Kiro의 Powers 관리 패널에서 설치·활성화·비활성화를 합니다.
 * Java x86 → Graviton 변환은 빌드/테스트 검증 때문에 Arm64 환경(Graviton EC2 또는 Apple Silicon Mac) 에서 실행 권장
 
 
+## ATX ##
 
+### 1. 설치하기 ###
+```
+curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash
+```
+[결과]
+```
+Setting up CLI...
+ℹ Installing latest version: 3.10.0
+ℹ Installing atx CLI version 3.10.0 for darwin-arm64...
+ℹ Checking dependencies...
+✔ Node.js version 25.9.0 detected (>= 22)
+ℹ Setting up directories...
+ℹ Release date: 2026-08-11T18:16:42Z
+ℹ Archive name: atx.zip
+ℹ Downloading atx CLI...
+✔ Checksum verification passed
+ℹ Extracting atx CLI...
+ℹ 📋 CHANGELOG.md available at: /Users/soonbeom/.local/share/atx/3.10.0/CHANGELOG.md
+ℹ Creating symlink...
+✔ atx successfully installed!
+Version: 3.10.0
+Location: /Users/soonbeom/.local/bin/atx
+Next: Run atx --help to get started
+✔ Installation complete!
+```
 
