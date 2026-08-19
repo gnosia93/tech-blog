@@ -44,6 +44,23 @@ Java 변환은 빌드·테스트 검증을 위해 Arm64 환경(Graviton EC2 인�
 * [Graviton용 Agent Skills (GitHub)](https://github.com/aws/aws-graviton-getting-started/tree/main/tools/skills)
 * [Kiro Power](https://github.com/kirodotdev/powers/tree/main)
 
+Kiro Power 에서 제공하는 모듈로 그라비톤 전환에 사용된다.. 
+```
+aws-graviton-migration
+Plan and Migration to Graviton - Analyzes source code to identify compatibilities with Graviton processors (Arm64 architecture). Generates reports with incompatibilities and provides suggestions for minimal required and recommended versions for language runtimes and dependency libraries.
+
+MCP Servers: arm-mcp (Docker)
+```
+
+아래는 각종 언어 버전업에 사용되것을 것으로 그라비톤 전환과는 직접적인 연관관계가 없다. 하지만 자바버전을 v8 -> v11 / 17 등으로 올릴때는 유효하다. 
+```
+aws-transform
+AWS Transform - Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE.
+
+MCP Servers: None
+```
+
+
 
 ## 마이그레이션 샘플 ##
 
