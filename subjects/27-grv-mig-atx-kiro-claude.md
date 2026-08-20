@@ -1,5 +1,7 @@
 ## Graviton  in Days vs Months with AWS Transform custom, Claude Skills and Kiro Power ## 
 
+* [참고] Claude Code 가 만들어 준 그라비톤 전환용 Skill - https://github.com/gnosia93/tech-blog/tree/main/subjects/skills
+
 ### PPT 또는 블로그 구성 ###
 
 #### 1 부 (15분) ####
