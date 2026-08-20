@@ -19,9 +19,19 @@
    * 얼마의 비용의 필요한가 ?
    * 각각의 도구들은 어떤 상관 관계 / 또는 보완 관계가 있고 어떻게 쓰는게 best pratice 인가 ?
 
+#### 시놉시스 ####
 ```
-Migrating from x86 to Graviton delivers up to 40% better price-performance, yet teams routinely defer it to "Year 2" because they lack understanding of agentic AI tools to accelerate Graviton migrations. This session covers a multi-tool approach that compresses the entire migration lifecycle from months to days. AWS Transform Custom, Claude Skills and Kiro power can help accelerate migrations -- using agentic AI to analyze source code, identify x86-specific incompatibilities, and auto-refactor applications for arm64 at scale. Together, they enable teams to confidently include Graviton in Day 1 proposals rather than deferring better price-performance indefinitely.
+Migrating from x86 to Graviton delivers up to 40% better price-performance,
+yet teams routinely defer it to "Year 2" because they lack understanding of agentic AI tools to accelerate Graviton migrations.
+This session covers a multi-tool approach that compresses the entire migration lifecycle from months to days.
+AWS Transform Custom, Claude Skills and Kiro power can help accelerate migrations --
+using agentic AI to analyze source code, identify x86-specific incompatibilities,
+and auto-refactor applications for arm64 at scale.
+Together, they enable teams to confidently include Graviton in Day 1 proposals rather
+than deferring better price-performance indefinitely.
 ```
+
+#### ATX (AWS Transformation Custom ) ####
 ```
 ATX: 이 시나리오에서 제가 할 수 있는 일을 구체적으로 정리하면:
 
@@ -53,6 +63,8 @@ ATX: 이 시나리오에서 제가 할 수 있는 일을 구체적으로 정리�
 - 검증까지 자동화되니 수동 QA 시간 절감
 - 학습이 쌓이니 프로젝트 갈수록 빨라짐
 ```
+
+#### Kiro ####
 ```
 Kiro
 
@@ -156,7 +168,7 @@ Supported Languages: C++, Python, Go, JavaScript, Java Container Runtime: Docker
 * arm-mcp - https://hub.docker.com/r/armlimited/arm-mcp
   
 
-#### claude code ####
+#### claude ####
 ```
 ❯ 그라비톤 마이그레이션 지원해?
 
