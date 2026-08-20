@@ -1,5 +1,7 @@
 ## Graviton  in Days vs Months with AWS Transform custom, Claude Skills and Kiro Power ## 
 
+### PPT 또는 블로그 구성 ###
+
 #### 1 부 (15분) ####
 * 그라비톤 소개
 * 비즈니스 현황
@@ -19,7 +21,7 @@
    * 얼마의 비용의 필요한가 ?
    * 각각의 도구들은 어떤 상관 관계 / 또는 보완 관계가 있고 어떻게 쓰는게 best pratice 인가 ?
 
-#### 시놉시스 ####
+### 시놉시스 ###
 ```
 Migrating from x86 to Graviton delivers up to 40% better price-performance,
 yet teams routinely defer it to "Year 2" because they lack understanding of agentic AI tools to accelerate Graviton migrations.
