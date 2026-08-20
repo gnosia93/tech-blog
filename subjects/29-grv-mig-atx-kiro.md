@@ -1,4 +1,24 @@
 ## Graviton  in Days vs Months with AWS Transform custom, Claude Skills and Kiro Power ## 
+
+#### 1 부 (15분) ####
+* 그라비톤 소개
+* 비즈니스 현황
+* 기술적 blocker ?
+* Migration 시 고려 사항 / 전략 . 등등..
+* Graviton 5 의 소개.. 등등. 
+
+
+#### 2 부 (15분) ####
+* 호환성 체크를 (코드, 라이브러리, 환경(도커/OS), IAC, CI Build Pipeline) 를 대상으로 해야 하는데 엄두나 나지 않는다.
+* 코드 베이스가 크고 / 영향도 파악이 쉽지 않다.
+* 바로 이때 atx custom, claude skill 그리고 kiro power 를 사용하자.
+* AI driven migration ..
+   * atx customer 이란 / Claude skill / Kiro power.
+   * 설치 방법
+   * 구체적으로 무엇을 자동화 해 주는가 ?
+   * 얼마의 비용의 필요한가 ?
+   * 각각의 도구들은 어떤 상관 관계 / 또는 보완 관계가 있고 어떻게 쓰는게 best pratice 인가 ?
+
 ```
 Migrating from x86 to Graviton delivers up to 40% better price-performance, yet teams routinely defer it to "Year 2" because they lack understanding of agentic AI tools to accelerate Graviton migrations. This session covers a multi-tool approach that compresses the entire migration lifecycle from months to days. AWS Transform Custom, Claude Skills and Kiro power can help accelerate migrations -- using agentic AI to analyze source code, identify x86-specific incompatibilities, and auto-refactor applications for arm64 at scale. Together, they enable teams to confidently include Graviton in Day 1 proposals rather than deferring better price-performance indefinitely.
 ```
